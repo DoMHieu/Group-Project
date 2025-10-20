@@ -1,13 +1,21 @@
-package com.example.musicplayer.StreamingData
+package com.example.musicplayer.data.remote
 
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-//RetrofitClient for SEND and GET data from API, in this case is deezer api
 object RetrofitClient {
     const val baseUrl = "https://test-something-for-my-project.onrender.com/"
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+    private val client = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
+        .build()
     private val retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)
+        .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 

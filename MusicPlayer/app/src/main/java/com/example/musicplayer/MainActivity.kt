@@ -9,7 +9,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.example.musicplayer.Home.HomeFragment
+import com.example.musicplayer.home.HomeFragment
 import com.example.musicplayer.Playlist.PlaylistFragment
 import com.example.musicplayer.playbackcontrol.PlayerViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -18,9 +18,7 @@ import kotlinx.coroutines.launch
 
 
 class MainActivity : AppCompatActivity() {
-    // Đổi tên `viewModel` thành `mainViewModel` cho rõ ràng
     private val mainViewModel: MainViewModel by viewModels()
-    // KHAI BÁO PlayerViewModel còn thiếu
     private val playerViewModel: PlayerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,18 +31,14 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         val bottomNavView = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        // Lấy view của mini_player_fragment từ layout
         val miniPlayerView = supportFragmentManager.findFragmentById(R.id.mini_player_fragment)?.view
 
-        // Xử lý sự kiện cho Bottom Navigation
         bottomNavView.setOnItemSelectedListener { item ->
             mainViewModel.setSelectedTab(item.itemId)
             true
         }
 
-        // Lắng nghe các thay đổi từ ViewModel
         lifecycleScope.launch {
-            // Lắng nghe trạng thái của trình phát nhạc toàn màn hình
             playerViewModel.isFullScreenPlayerVisible.collect { isVisible ->
                 if (isVisible) {
                     bottomNavView.visibility = View.GONE
@@ -57,19 +51,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            // Lắng nghe tab được chọn để điều hướng
             mainViewModel.selectedTabId.collectLatest { tabId ->
                 if(bottomNavView.selectedItemId != tabId) {
                     bottomNavView.selectedItemId = tabId
                 }
-                // Chỉ điều hướng khi player to không hiển thị
                 if (!playerViewModel.isFullScreenPlayerVisible.value) {
                     navigateToFragment(tabId)
                 }
             }
         }
 
-        // Lắng nghe sự kiện nút Back để cập nhật trạng thái
         supportFragmentManager.addOnBackStackChangedListener {
             val isFullScreenPlayerShowing = supportFragmentManager.findFragmentById(R.id.full_player_container) != null
             playerViewModel.setFullScreenPlayerVisibility(isFullScreenPlayerShowing)

@@ -57,4 +57,5 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.3.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.google.android.material:material:1.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }

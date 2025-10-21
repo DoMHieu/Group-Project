@@ -7,15 +7,17 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
+import com.example.musicplayer.home.HomeFragment
 import com.example.musicplayer.home.SearchFragment
 import com.example.musicplayer.playback.PlayerFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), HomeFragment.OnSearchClickListener {
 
-    private val searchFragment = SearchFragment()
+    private val homeFragment = HomeFragment()
     private val playerFragment = PlayerFragment()
-    private var activeFragment: Fragment = searchFragment
+    private var activeFragment: Fragment = homeFragment
+    private lateinit var bottomNavigationView: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,8 +27,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val container = findViewById<View>(R.id.container)
-        val bottomNavigationView =
-            findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNavigationView = findViewById(R.id.bottom_navigation)
 
         ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
             val cutoutInsets = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
@@ -42,15 +43,23 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().apply {
                 add(R.id.container, playerFragment, "2").hide(playerFragment)
-                add(R.id.container, searchFragment, "1")
+                add(R.id.container, homeFragment, "1")
             }.commit()
         }
+        supportFragmentManager.addOnBackStackChangedListener {
+            val currentVisibleFragment = supportFragmentManager.fragments.find { it.isVisible }
+            if (currentVisibleFragment is HomeFragment || currentVisibleFragment is PlayerFragment) {
+                bottomNavigationView.visibility = View.VISIBLE
+            } else {
+                bottomNavigationView.visibility = View.GONE
+            }
+        }
 
-        bottomNavigationView.setOnItemSelectedListener { item ->
+        bottomNavigationView?.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.home -> {
-                    supportFragmentManager.beginTransaction().hide(activeFragment).show(searchFragment).commit()
-                    activeFragment = searchFragment
+                    supportFragmentManager.beginTransaction().hide(activeFragment).show(homeFragment).commit()
+                    activeFragment = homeFragment
                     true
                 }
                 R.id.control -> {
@@ -71,9 +80,9 @@ class MainActivity : AppCompatActivity() {
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         val activeTag = savedInstanceState.getString("active_fragment_tag")
-        val fragmentToShow = supportFragmentManager.findFragmentByTag(activeTag) ?: searchFragment
-        val fragmentToHide1 = if (fragmentToShow != searchFragment) searchFragment else playerFragment
-        val fragmentToHide2 = if (fragmentToShow != playerFragment) playerFragment else searchFragment
+        val fragmentToShow = supportFragmentManager.findFragmentByTag(activeTag) ?: homeFragment
+        val fragmentToHide1 = if (fragmentToShow != homeFragment) homeFragment else playerFragment
+        val fragmentToHide2 = if (fragmentToShow != playerFragment) playerFragment else homeFragment
         supportFragmentManager.beginTransaction()
             .hide(fragmentToHide1)
             .hide(fragmentToHide2)
@@ -81,4 +90,14 @@ class MainActivity : AppCompatActivity() {
             .commit()
         activeFragment = fragmentToShow
     }
+
+    override fun onSearchClicked() {
+        bottomNavigationView?.visibility = View.GONE
+        supportFragmentManager.beginTransaction()
+            .add(R.id.container, SearchFragment())
+            .hide(activeFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
 }

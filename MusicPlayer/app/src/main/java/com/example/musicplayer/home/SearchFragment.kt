@@ -3,6 +3,7 @@ package com.example.musicplayer.home
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
+import com.example.musicplayer.playback.PlayerFragment
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -20,72 +21,113 @@ import com.example.musicplayer.R
 import com.example.musicplayer.api.RetrofitClient
 import com.example.musicplayer.api.SoundCloudResponseItem
 import com.google.android.material.snackbar.Snackbar
+import android.view.inputmethod.InputMethodManager
+import android.content.Context
 
 class SearchFragment : Fragment() {
-
     private lateinit var searchInput: EditText
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: SongAdapter
     private val songs = mutableListOf<Song>()
+    private lateinit var suggestionsRecyclerView: RecyclerView
+    private lateinit var suggestionsAdapter: SuggestionsAdapter
+    private val allKeywords = listOf("love story", "summer vibe", "dance monkey",
+        "rockstar", "acoustic covers", "lofi chill", "happy songs", "electronic music",
+        "deco*27", "PinocchioP")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View = inflater.inflate(R.layout.fragment_search, container, false)
 
-    private val randomKeywords = listOf("love","summer","dance","rock","deco*27","PinocchioP","acoustic","chill","happy","Hatsune Miku","AJR","Disco")
-    private fun getRandomKeyword(): String {
-        return randomKeywords.random()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         searchInput = view.findViewById(R.id.searchInput)
         recyclerView = view.findViewById(R.id.recyclerView)
-
-        adapter = SongAdapter(songs) { song ->
-            MusicQueueManager.add(song)
-            Snackbar.make(requireView(), "Added to the queue", Snackbar.LENGTH_SHORT).show()
-            if (MusicQueueManager.getQueue().size == 1) {
-                MusicQueueManager.getPlayableSong(song) { playable ->
-                    if (playable != null) {
-                        MusicQueueManager.setCurrentSong(playable)
-                        MusicService.Companion.play(
-                            playable.url,
-                            requireContext(),
-                            title = playable.title,
-                            artist = playable.artist,
-                            cover = playable.cover?:"",
-                            coverXL = playable.coverXL?:"",
-                        )
-                    } else {
-                        Snackbar.make(requireView(), "Không thể phát bài này", Snackbar.LENGTH_LONG).show()
-                    }
+        suggestionsRecyclerView = view.findViewById(R.id.suggestionsRecyclerView)
+        setupResultsRecyclerView()
+        setupSuggestionsRecyclerView()
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = adapter
+        searchInput.setOnEditorActionListener { textView, actionId, event ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                val query = searchInput.text.toString().trim()
+                if (query.isNotEmpty()) {
+                    showSuggestions(false)
+                    hideKeyboard()
+                    searchInput.clearFocus()
+                    searchSongs(query)
                 }
+                true
+            } else {
+                false
             }
         }
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
-        val randomKey = getRandomKeyword()
-        searchSongs(randomKey)
-
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val keyword = s.toString().trim()
-                if (keyword.isNotEmpty()) {
-                    searchSongs(keyword)
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            @SuppressLint("NotifyDataSetChanged")
+            override fun afterTextChanged(s: Editable?) {
+                val query= s.toString().trim()
+                if(query.isNotEmpty()){
+                    val filteredSuggestions = allKeywords.filter { it.contains(query,ignoreCase = true) }
+                    suggestionsAdapter.updateSuggestions(filteredSuggestions)
+                    showSuggestions(true)
+                }
+                else {
+                    showSuggestions(false)
+                    songs.clear()
+                    adapter.notifyDataSetChanged()
+                }
+            }})}
+
+    private fun setupResultsRecyclerView() {
+        adapter = SongAdapter(songs) { song ->
+            MusicQueueManager.getPlayableSong(song) { playable ->
+                if (playable != null) {
+                    MusicQueueManager.add(playable)
+                    MusicQueueManager.setCurrentSong(playable)
+                    MusicService.play(
+                        playable.url,
+                        requireContext(),
+                        title = playable.title,
+                        artist = playable.artist,
+                        cover = playable.cover ?: "",
+                        coverXL = playable.coverXL ?: ""
+                    )
+                    parentFragmentManager.beginTransaction()
+                        .add(R.id.container, PlayerFragment())
+                        .addToBackStack(null)
+                        .commit()
                 } else {
-                    val randomKey = getRandomKeyword()
-                    searchSongs(randomKey)
+                    Snackbar.make(requireView(), "Không thể phát bài hát này", Snackbar.LENGTH_LONG).show()
                 }
             }
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        }
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = adapter
     }
 
+    private fun setupSuggestionsRecyclerView() {
+        suggestionsAdapter= SuggestionsAdapter(emptyList()) {
+            suggestion ->
+            searchInput.setText(suggestion)
+            searchInput.clearFocus()
+            hideKeyboard()
+            showSuggestions(false)
+            searchSongs(suggestion)
+        }
+    }
+    private fun showSuggestions(show: Boolean) {
+        suggestionsRecyclerView.visibility = if (show) View.VISIBLE else View.GONE
+        recyclerView.visibility = if (show) View.GONE else View.VISIBLE
+    }
+
+    private fun hideKeyboard() {
+        val imm = context?.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(view?.windowToken, 0)
+    }
     private fun searchSongs(keyword: String) {
         RetrofitClient.api.searchTrack(keyword).enqueue(object : Callback<List<SoundCloudResponseItem>> {
             @SuppressLint("NotifyDataSetChanged")
@@ -93,6 +135,9 @@ class SearchFragment : Fragment() {
                 call: Call<List<SoundCloudResponseItem>>,
                 response: Response<List<SoundCloudResponseItem>>
             ) {
+                if (!isAdded) {
+                    return
+                }
                 if (response.isSuccessful) {
                     val tracks = response.body() ?: emptyList()
                     songs.clear()
@@ -111,7 +156,9 @@ class SearchFragment : Fragment() {
 
                     adapter.notifyDataSetChanged()
                 } else {
-                    Snackbar.make(requireView(), "Lỗi khi tìm kiếm", Snackbar.LENGTH_SHORT).show()
+                    view?.let {
+                        Snackbar.make(it, "Lỗi khi tìm kiếm", Snackbar.LENGTH_SHORT).show()
+                    }
                 }
             }
 

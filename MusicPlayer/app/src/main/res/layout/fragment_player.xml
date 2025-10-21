@@ -11,27 +11,12 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingBottom="48dp"
-        android:background="?attr/colorPrimary">
+        android:background="?attr/colorSurface">
 
-        <!-- Toolbar -->
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/Toolbar"
-            style="@style/Widget.Material3.Toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:navigationIcon="@drawable/music_note_24px"
-            tools:title="@tools:sample/full_names"
-            tools:subtitle="@tools:sample/last_names"
-            android:background="?attr/colorPrimaryContainer"
-            />
-
-        <!-- Cover + Queue (thay thế nhau) -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
-
-            <!-- Ảnh bìa -->
             <ImageView
                 android:id="@+id/imageView"
                 android:layout_width="350dp"
@@ -40,8 +25,6 @@
                 android:layout_margin="16dp"
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/avatars" />
-
-            <!-- Queue (ẩn mặc định) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvQueue"
                 android:layout_width="match_parent"
@@ -51,7 +34,47 @@
                 android:padding="8dp"/>
         </FrameLayout>
 
-        <!-- Progress bar + thời gian -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:paddingBottom="16dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.example.musicplayer.utils.MarqueeTextView
+                    android:id="@+id/toolbarTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
+                    android:singleLine="true"
+                    android:scrollHorizontally="true"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:textStyle="bold"
+                    tools:text="Tên một bài hát rất dài để test hiệu ứng chạy chữ" />
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/toolbarSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:gravity="center"
+                android:ellipsize="end"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textColor="?android:attr/textColorSecondary"
+                tools:text="Tên nghệ sĩ" />
+
+        </LinearLayout>
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ProgressLayout"
             android:layout_width="match_parent"
@@ -83,7 +106,6 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 />
 
-
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/songTotalTime"
                 android:layout_width="wrap_content"
@@ -98,7 +120,6 @@
                 app:layout_constraintBottom_toBottomOf="@id/progressSlider"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Các nút điều khiển -->
         <GridLayout
             android:id="@+id/buttonGrid"
             android:layout_width="wrap_content"
@@ -143,7 +164,6 @@
                 android:padding="16dp"
                 app:srcCompat="@drawable/skip_next_24px" />
 
-            <!-- Nút toggle queue -->
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/playlist_play"
                 android:layout_width="wrap_content"

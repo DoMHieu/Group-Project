@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.Target
-import com.google.android.material.appbar.MaterialToolbar
 import java.util.concurrent.TimeUnit
 import androidx.core.view.isGone
 import com.google.android.material.snackbar.Snackbar
@@ -43,19 +42,18 @@ class PlayerFragment : Fragment() {
     private lateinit var rvQueue: RecyclerView
     private lateinit var queueAdapter: SongAdapter
     private var isUserSeeking = false
+    private lateinit var toolbarTitle: TextView
+    private lateinit var toolbarSubtitle: TextView
 
-    //Receiver message from Broadcast (Intent)
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
-            //Get Song data information
             val title = intent?.getStringExtra("title") ?: ""
             val artist = intent?.getStringExtra("artist") ?: ""
             queueAdapter.notifyDataSetChanged()
-            val toolbar = view?.findViewById<MaterialToolbar>(R.id.Toolbar)   // Toolbar editor
-            toolbar?.title = title
-            toolbar?.subtitle = artist
-            //Music CoverXL Glide
+            toolbarTitle.text = title
+            toolbarSubtitle.text = artist
+
             val coverUrlXL = intent?.getStringExtra("cover_xl") ?: ""
             if (coverUrlXL.isNotBlank()) {
                 Glide.with(requireContext())
@@ -73,7 +71,6 @@ class PlayerFragment : Fragment() {
                 coverImage.setImageResource(R.drawable.image_24px)
             }
 
-            // slider, have been replaced with seekbar, still keep using slider as variable
             val position = intent?.getLongExtra("position", 0L) ?: 0L
             val duration = intent?.getLongExtra("duration", 0L) ?: 0L
             if (!isUserSeeking && duration > 0) {
@@ -85,7 +82,6 @@ class PlayerFragment : Fragment() {
             textCurrentTime.text = formatTime(position)
             textTotalTime.text = if (duration > 0) formatTime(duration) else "--:--"
 
-            //Play, Loop button
             val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
             playPauseButton.setImageResource(
                 if (isPlaying) R.drawable.pause_24px else R.drawable.play
@@ -112,10 +108,11 @@ class PlayerFragment : Fragment() {
         repeatButton = view.findViewById(R.id.repeatButton)
         coverImage = view.findViewById(R.id.imageView)
         rvQueue = view.findViewById(R.id.rvQueue)
-        playPauseButton.setOnClickListener { sendMusicCommand("TOGGLE_PLAY") } //send message to intent
+        toolbarTitle = view.findViewById(R.id.toolbarTitle)
+        toolbarSubtitle = view.findViewById(R.id.toolbarSubtitle)
+        playPauseButton.setOnClickListener { sendMusicCommand("TOGGLE_PLAY") }
         repeatButton.setOnClickListener { sendMusicCommand("TOGGLE_REPEAT") }
 
-        // SeekBar change listener
         slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
                 isUserSeeking = true
@@ -133,39 +130,47 @@ class PlayerFragment : Fragment() {
             }
         })
 
-        //Next, Previous
         val nextButton = view.findViewById<ImageView>(R.id.nextButton)
         val previousButton = view.findViewById<ImageView>(R.id.previousButton)
         nextButton.setOnClickListener {
             val next = MusicQueueManager.playNext()
-            next?.let {
-                MusicService.Companion.play(
-                    it.url,
-                    requireContext(),
-                    title = it.title,
-                    artist = it.artist,
-                    cover = it.cover?:"",
-                    coverXL = it.coverXL?:""
-                )
-                queueAdapter.notifyDataSetChanged()
+            next?.let {song ->
+                MusicQueueManager.getPlayableSong(song) {playable ->
+                    if(playable != null) {
+                        MusicService.Companion.play(
+                            playable.url,
+                            requireContext(),
+                            title = playable.title,
+                            artist = playable.artist,
+                            cover = playable.cover?:"",
+                            coverXL = playable.coverXL?:""
+                        )
+                        queueAdapter.notifyDataSetChanged()
+                    } else
+                        Snackbar.make(requireView(), "Can't play next song", Snackbar.LENGTH_LONG).show()
+                }
             }
         }
         previousButton.setOnClickListener {
             val prev = MusicQueueManager.playPrevious()
-            prev?.let {
-                MusicService.Companion.play(
-                    it.url,
-                    requireContext(),
-                    title = it.title,
-                    artist = it.artist,
-                    cover = it.cover?:"",
-                    coverXL = it.coverXL?:"",
-                )
-                queueAdapter.notifyDataSetChanged()
+            prev?.let { song ->
+                MusicQueueManager.getPlayableSong(song) { playable ->
+                    if (playable != null) {
+                        MusicService.Companion.play(
+                            playable.url,
+                            requireContext(),
+                            title = playable.title,
+                            artist = playable.artist,
+                            cover = playable.cover ?: "",
+                            coverXL = playable.coverXL ?: "",
+                        )
+                        queueAdapter.notifyDataSetChanged()
+                    } else
+                        Snackbar.make(requireView(), "Không thể phát bài trước đó", Snackbar.LENGTH_LONG).show()
+                }
             }
         }
 
-        // Queue
         rvQueue.layoutManager = LinearLayoutManager(requireContext())
         queueAdapter = SongAdapter(MusicQueueManager.getQueue()) { song ->
             MusicQueueManager.getPlayableSong(song) { playable ->
@@ -192,7 +197,6 @@ class PlayerFragment : Fragment() {
         rvQueue.adapter = queueAdapter
         queueAdapter.notifyDataSetChanged()
 
-        // Swipe to delete
         val itemTouchHelper =
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
                 override fun onMove(
@@ -209,15 +213,25 @@ class PlayerFragment : Fragment() {
                     if (isCurrent) {
                         val next = MusicQueueManager.getCurrent()
                         if (next != null) {
-                            MusicService.Companion.play(
-                                next.url,
-                                requireContext(),
-                                title = next.title,
-                                artist = next.artist,
-                                cover = next.cover?:"",
-                                coverXL = next.coverXL?:"",
-                            )
-                        } else { //else, continue to run, this code only work to update queue
+                            MusicQueueManager.getPlayableSong(next) { playable ->
+                                if (playable != null) {
+                                    MusicService.Companion.play(
+                                        playable.url,
+                                        requireContext(),
+                                        title = playable.title,
+                                        artist = playable.artist,
+                                        cover = playable.cover ?: "",
+                                        coverXL = playable.coverXL ?: "",
+                                    )
+                                } else
+                                    Snackbar.make(
+                                        requireView(),
+                                        "Không thể phát bài kế tiếp",
+                                        Snackbar.LENGTH_LONG
+                                    ).show()
+                            }
+                        }
+                        else {
                             MusicService.Companion.next(requireContext())
                         }
                     }
@@ -226,7 +240,6 @@ class PlayerFragment : Fragment() {
             })
         itemTouchHelper.attachToRecyclerView(rvQueue)
 
-        //Queue Button
         val btnQueue = view.findViewById<AppCompatImageButton>(R.id.playlist_play)
         btnQueue.setOnClickListener {
             if (rvQueue.isGone) {

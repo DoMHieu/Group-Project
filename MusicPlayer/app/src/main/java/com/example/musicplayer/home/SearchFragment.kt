@@ -102,7 +102,7 @@ class SearchFragment : Fragment() {
                             id = item.id,
                             title = item.title,
                             url = "",
-                            artist = item.user.username.ifEmpty { item.user.full_name.ifEmpty { "Unknown" } },
+                            artist = item.metadata_artist?.takeIf { it.isNotBlank() } ?: item.user.username.ifEmpty { item.user.full_name.ifEmpty { "Unknown" } },
                             cover = item.artwork_url,
                             coverXL = largeArtworkUrl,
                             lastFetchTime = 0L

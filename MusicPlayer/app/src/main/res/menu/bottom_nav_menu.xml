@@ -2,8 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/home"
         android:title="Home"
-        android:icon="@drawable/home_24px"/>
-    <item android:id="@+id/playlist"
+        android:icon="@drawable/home"/>
+    <item android:id="@+id/control"
         android:title="Now Playing"
-        android:icon="@drawable/menu_24px"/>
+        android:icon="@drawable/music_note_24px"/>
+
 </menu>

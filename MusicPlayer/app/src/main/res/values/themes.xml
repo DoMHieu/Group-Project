@@ -1,29 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Base.Theme.MusicPlayer" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary_light</item>
-        <item name="colorOnPrimary">@color/onPrimary_light</item>
-        <item name="colorPrimaryContainer">@color/primaryContainer_light</item>
-        <item name="colorOnPrimaryContainer">@color/onPrimaryContainer_light</item>
-        <item name="colorSecondary">@color/secondary_light</item>
-        <item name="colorOnSecondary">@color/onSecondary_light</item>
-        <item name="colorSecondaryContainer">@color/secondaryContainer_light</item>
-        <item name="colorOnSecondaryContainer">@color/onSecondaryContainer_light</item>
-        <item name="colorTertiary">@color/tertiary_light</item>
-        <item name="colorOnTertiary">@color/onTertiary_light</item>
-        <item name="colorTertiaryContainer">@color/tertiaryContainer_light</item>
-        <item name="colorOnTertiaryContainer">@color/onTertiaryContainer_light</item>
-        <item name="colorError">@color/error_light</item>
-        <item name="colorOnError">@color/onError_light</item>
-        <item name="colorErrorContainer">@color/errorContainer_light</item>
-        <item name="colorOnErrorContainer">@color/onErrorContainer_light</item>
-        <item name="android:colorBackground">@color/background_light</item>
-        <item name="colorOnBackground">@color/onBackground_light</item>
-        <item name="colorSurface">@color/surface_light</item>
-        <item name="colorOnSurface">@color/onSurface_light</item>
-        <item name="colorSurfaceVariant">@color/surfaceVariant_light</item>
-        <item name="colorOnSurfaceVariant">@color/onSurfaceVariant_light</item>
-        <item name="colorOutline">@color/outline_light</item>
-        <item name="android:windowActivityTransitions">true</item>
+
+    <style name="Theme.MyApp" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_error</item>
+        <item name="android:statusBarColor">?attr/colorOnPrimary</item>
+        <item name="android:navigationBarColor">?attr/colorOnPrimary</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
-    <style name="Theme.MusicPlayer" parent="Base.Theme.MusicPlayer" />
 </resources>

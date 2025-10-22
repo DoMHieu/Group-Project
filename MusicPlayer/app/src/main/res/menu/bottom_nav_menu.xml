@@ -3,8 +3,4 @@
     <item android:id="@+id/home"
         android:title="Home"
         android:icon="@drawable/home"/>
-    <item android:id="@+id/control"
-        android:title="Now Playing"
-        android:icon="@drawable/music_note_24px"/>
-
 </menu>

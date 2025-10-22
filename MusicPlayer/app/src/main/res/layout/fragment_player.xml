@@ -4,13 +4,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="@color/md_theme_light_surface"
     tools:context=".playback.PlayerFragment">
 
     <LinearLayout
+        android:id="@+id/player_content_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingBottom="48dp"
+        android:paddingBottom="140sp"
         android:background="?attr/colorSurface">
 
         <FrameLayout
@@ -25,13 +29,7 @@
                 android:layout_margin="16dp"
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/avatars" />
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvQueue"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"
-                android:background="@android:color/darker_gray"
-                android:padding="8dp"/>
+
         </FrameLayout>
 
         <LinearLayout

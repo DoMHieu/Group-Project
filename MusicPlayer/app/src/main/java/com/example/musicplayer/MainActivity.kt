@@ -1,23 +1,60 @@
 package com.example.musicplayer
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import com.example.musicplayer.home.HomeFragment
-import com.example.musicplayer.home.SearchFragment
+import com.example.musicplayer.playback.MiniPlayerFragment
+import com.example.musicplayer.playback.MusicQueueManager
 import com.example.musicplayer.playback.PlayerFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.core.view.isVisible
 
-class MainActivity : AppCompatActivity(), HomeFragment.OnSearchClickListener {
+class MainActivity : AppCompatActivity() {
 
     private val homeFragment = HomeFragment()
+    private val miniPlayerFragment = MiniPlayerFragment()
     private val playerFragment = PlayerFragment()
     private var activeFragment: Fragment = homeFragment
     private lateinit var bottomNavigationView: BottomNavigationView
+    private lateinit var miniPlayerContainer: View
+    private val musicStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val currentSong = MusicQueueManager.getCurrent()
+            val shouldBeVisible = (currentSong != null)
+            val isVisible = (miniPlayerContainer.isVisible)
+
+            if (shouldBeVisible && !isVisible) {
+                miniPlayerContainer.visibility = View.VISIBLE
+                miniPlayerContainer.post {
+                    miniPlayerContainer.translationY = miniPlayerContainer.height.toFloat()
+                    miniPlayerContainer.animate()
+                        .translationY(0f)
+                        .setDuration(300)
+                        .start()
+                }
+            } else if (!shouldBeVisible && isVisible) {
+                miniPlayerContainer.animate()
+                    .translationY(miniPlayerContainer.height.toFloat())
+                    .setDuration(300)
+                    .withEndAction {
+                        miniPlayerContainer.visibility = View.GONE
+                    }
+                    .start()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,9 +62,12 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnSearchClickListener {
         actionBar?.hide()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_main)
-
         val container = findViewById<View>(R.id.container)
         bottomNavigationView = findViewById(R.id.bottom_navigation)
+        miniPlayerContainer = findViewById(R.id.mini_player_container)
+
+        val fullScreenContainer = findViewById<View>(R.id.full_screen_container)
+        ViewCompat.setOnApplyWindowInsetsListener(fullScreenContainer) { v, insets -> insets }
 
         ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
             val cutoutInsets = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
@@ -42,34 +82,61 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnSearchClickListener {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().apply {
-                add(R.id.container, playerFragment, "2").hide(playerFragment)
                 add(R.id.container, homeFragment, "1")
+                add(R.id.mini_player_container, miniPlayerFragment)
+                add(R.id.full_screen_container, playerFragment, "player").hide(playerFragment)
             }.commit()
         }
-        supportFragmentManager.addOnBackStackChangedListener {
-            val currentVisibleFragment = supportFragmentManager.fragments.find { it.isVisible }
-            if (currentVisibleFragment is HomeFragment || currentVisibleFragment is PlayerFragment) {
-                bottomNavigationView.visibility = View.VISIBLE
-            } else {
-                bottomNavigationView.visibility = View.GONE
-            }
-        }
 
-        bottomNavigationView?.setOnItemSelectedListener { item ->
+        bottomNavigationView.setOnItemSelectedListener { item ->
+            if (supportFragmentManager.backStackEntryCount > 0) {
+                supportFragmentManager.popBackStack()
+            }
             when (item.itemId) {
                 R.id.home -> {
                     supportFragmentManager.beginTransaction().hide(activeFragment).show(homeFragment).commit()
                     activeFragment = homeFragment
                     true
                 }
-                R.id.control -> {
-                    supportFragmentManager.beginTransaction().hide(activeFragment).show(playerFragment).commit()
-                    activeFragment = playerFragment
-                    true
-                }
                 else -> false
             }
         }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (playerFragment.isVisible) {
+                    playerFragment.dismissWithAnimation()
+                }
+                else if (supportFragmentManager.backStackEntryCount > 0) {
+                    supportFragmentManager.popBackStack()
+                }
+                else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter("MUSIC_PROGRESS_UPDATE")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(musicStateReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            ContextCompat.registerReceiver(
+                this,
+                musicStateReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(musicStateReceiver)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -81,23 +148,10 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnSearchClickListener {
         super.onRestoreInstanceState(savedInstanceState)
         val activeTag = savedInstanceState.getString("active_fragment_tag")
         val fragmentToShow = supportFragmentManager.findFragmentByTag(activeTag) ?: homeFragment
-        val fragmentToHide1 = if (fragmentToShow != homeFragment) homeFragment else playerFragment
-        val fragmentToHide2 = if (fragmentToShow != playerFragment) playerFragment else homeFragment
-        supportFragmentManager.beginTransaction()
-            .hide(fragmentToHide1)
-            .hide(fragmentToHide2)
-            .show(fragmentToShow)
-            .commit()
+        if (fragmentToShow != homeFragment) {
+            supportFragmentManager.beginTransaction().hide(homeFragment).commit()
+        }
+        supportFragmentManager.beginTransaction().show(fragmentToShow).commit()
         activeFragment = fragmentToShow
     }
-
-    override fun onSearchClicked() {
-        bottomNavigationView?.visibility = View.GONE
-        supportFragmentManager.beginTransaction()
-            .add(R.id.container, SearchFragment())
-            .hide(activeFragment)
-            .addToBackStack(null)
-            .commit()
-    }
-
 }

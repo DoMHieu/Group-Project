@@ -18,7 +18,8 @@ import com.example.musicplayer.R
 
 class SongAdapter(
     private val items: List<Song>,
-    private val onClick: (Song) -> Unit
+    private val onClick: (Song) -> Unit,
+    private val onLongClick: (Song) -> Unit
 ) : RecyclerView.Adapter<SongAdapter.SongViewHolder>() {
 
     inner class SongViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -61,6 +62,10 @@ class SongAdapter(
         }
         //OnclickListener for queue
         holder.itemView.setOnClickListener { onClick(song) }
+        holder.itemView.setOnLongClickListener {
+            onLongClick(song)
+            true
+        }
     }
     override fun getItemCount(): Int = items.size
 }

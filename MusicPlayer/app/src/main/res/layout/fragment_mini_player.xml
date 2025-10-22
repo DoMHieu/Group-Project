@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="?attr/colorSurfaceVariant"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/mini_player_cover"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:src="@drawable/image_24px" />
+
+    <ImageButton
+        android:id="@+id/mini_player_play_pause"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/play"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <TextView
+        android:id="@+id/mini_player_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:ellipsize="marquee"
+        android:singleLine="true"
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@id/mini_player_cover"
+        app:layout_constraintEnd_toStartOf="@id/mini_player_play_pause"
+        app:layout_constraintTop_toTopOf="@id/mini_player_cover"
+        tools:text="Tên bài hát" />
+
+    <TextView
+        android:id="@+id/mini_player_artist"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        app:layout_constraintStart_toStartOf="@id/mini_player_title"
+        app:layout_constraintEnd_toEndOf="@id/mini_player_title"
+        app:layout_constraintBottom_toBottomOf="@id/mini_player_cover"
+        tools:text="Tên nghệ sĩ" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

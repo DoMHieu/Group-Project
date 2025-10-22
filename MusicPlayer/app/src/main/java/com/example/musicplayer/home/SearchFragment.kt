@@ -3,7 +3,6 @@ package com.example.musicplayer.home
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
-import com.example.musicplayer.playback.PlayerFragment
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -83,28 +82,32 @@ class SearchFragment : Fragment() {
             }})}
 
     private fun setupResultsRecyclerView() {
-        adapter = SongAdapter(songs) { song ->
-            MusicQueueManager.getPlayableSong(song) { playable ->
-                if (playable != null) {
-                    MusicQueueManager.add(playable)
-                    MusicQueueManager.setCurrentSong(playable)
-                    MusicService.play(
-                        playable.url,
-                        requireContext(),
-                        title = playable.title,
-                        artist = playable.artist,
-                        cover = playable.cover ?: "",
-                        coverXL = playable.coverXL ?: ""
-                    )
-                    parentFragmentManager.beginTransaction()
-                        .add(R.id.container, PlayerFragment())
-                        .addToBackStack(null)
-                        .commit()
-                } else {
-                    Snackbar.make(requireView(), "Không thể phát bài hát này", Snackbar.LENGTH_LONG).show()
+        adapter = SongAdapter(
+            songs,
+            onClick = { song ->
+                MusicQueueManager.getPlayableSong(song) { playable ->
+                    if (playable != null) {
+                        MusicQueueManager.add(playable)
+                        MusicQueueManager.setCurrentSong(playable)
+                        MusicService.play(
+                            playable.url,
+                            requireContext(),
+                            title = playable.title,
+                            artist = playable.artist,
+                            cover = playable.cover ?: "",
+                            coverXL = playable.coverXL ?: ""
+                        )
+                    } else {
+                        Snackbar.make(requireView(), "Can't play this song", Snackbar.LENGTH_LONG).show()
+                    }
                 }
+            },
+            onLongClick = { song ->
+                MusicQueueManager.add(song)
+                Snackbar.make(requireView(), "Queue added", Snackbar.LENGTH_SHORT).show()
             }
-        }
+        )
+
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
     }

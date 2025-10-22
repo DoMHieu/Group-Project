@@ -5,6 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/md_theme_light_surface"
+    android:clickable="true"
+    android:focusable="true"
     android:padding="8dp">
 
     <EditText

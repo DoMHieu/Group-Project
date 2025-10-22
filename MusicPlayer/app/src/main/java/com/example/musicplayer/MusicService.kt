@@ -69,6 +69,7 @@ class MusicService : Service() {
         override fun run() {
             if (::exoPlayer.isInitialized) {
                 sendProgressBroadcast()
+                updatePlaybackState()
             }
             handler.postDelayed(this, 1000)
         }
@@ -372,14 +373,13 @@ class MusicService : Service() {
             .build()
 
         mediaSession.setPlaybackState(playbackState)
-//MediaMetadataCompat = backward compatible
         val metadataBuilder = android.support.v4.media.MediaMetadataCompat.Builder()
             .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_TITLE, currentTitle)
             .putString(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_ARTIST, currentArtist)
             .putLong(android.support.v4.media.MediaMetadataCompat.METADATA_KEY_DURATION, duration)
 
         if (coverXL.isNotBlank()) {
-            Glide.with(this)
+            Glide.with(applicationContext)
                 .asBitmap()
                 .load(coverXL)
                 .into(object : CustomTarget<Bitmap>() {

@@ -19,18 +19,17 @@ import android.widget.TextView
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.Target
 import java.util.concurrent.TimeUnit
-import androidx.core.view.isGone
 import com.google.android.material.snackbar.Snackbar
 import com.bumptech.glide.request.RequestOptions
 import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
-import com.example.musicplayer.home.SongAdapter
+import android.view.MotionEvent
+import android.animation.ObjectAnimator
+import android.animation.Animator
+import androidx.core.animation.doOnEnd
 
 class PlayerFragment : Fragment() {
     private lateinit var slider: SeekBar
@@ -39,21 +38,19 @@ class PlayerFragment : Fragment() {
     private lateinit var playPauseButton: ImageView
     private lateinit var repeatButton: ImageView
     private lateinit var coverImage: ImageView
-    private lateinit var rvQueue: RecyclerView
-    private lateinit var queueAdapter: SongAdapter
     private var isUserSeeking = false
     private lateinit var toolbarTitle: TextView
     private lateinit var toolbarSubtitle: TextView
+    private var initialTouchY: Float = 0f
+    private var isDragging: Boolean = false
 
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
             val title = intent?.getStringExtra("title") ?: ""
             val artist = intent?.getStringExtra("artist") ?: ""
-            queueAdapter.notifyDataSetChanged()
             toolbarTitle.text = title
             toolbarSubtitle.text = artist
-
             val coverUrlXL = intent?.getStringExtra("cover_xl") ?: ""
             if (coverUrlXL.isNotBlank()) {
                 Glide.with(requireContext())
@@ -93,12 +90,13 @@ class PlayerFragment : Fragment() {
             )
         }
     }
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View = inflater.inflate(R.layout.fragment_player, container, false)
-    @SuppressLint("NotifyDataSetChanged")
+
+    override fun onCreateView(inflater: LayoutInflater,container: ViewGroup?,savedInstanceState: Bundle?): View? {
+        val view = inflater.inflate(R.layout.fragment_player, container, false)
+        return view
+    }
+
+    @SuppressLint("NotifyDataSetChanged", "ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         slider = view.findViewById(R.id.progressSlider)
@@ -107,26 +105,18 @@ class PlayerFragment : Fragment() {
         playPauseButton = view.findViewById(R.id.playPauseButton)
         repeatButton = view.findViewById(R.id.repeatButton)
         coverImage = view.findViewById(R.id.imageView)
-        rvQueue = view.findViewById(R.id.rvQueue)
         toolbarTitle = view.findViewById(R.id.toolbarTitle)
         toolbarSubtitle = view.findViewById(R.id.toolbarSubtitle)
         playPauseButton.setOnClickListener { sendMusicCommand("TOGGLE_PLAY") }
         repeatButton.setOnClickListener { sendMusicCommand("TOGGLE_REPEAT") }
-
         slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                isUserSeeking = true
-            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) { isUserSeeking = true }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 isUserSeeking = false
-                seekBar?.let {
-                    sendMusicCommand("SEEK_TO", it.progress.toLong())
-                }
+                seekBar?.let { sendMusicCommand("SEEK_TO", it.progress.toLong()) }
             }
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    textCurrentTime.text = formatTime(progress.toLong())
-                }
+                if (fromUser) { textCurrentTime.text = formatTime(progress.toLong()) }
             }
         })
 
@@ -137,7 +127,7 @@ class PlayerFragment : Fragment() {
             next?.let {song ->
                 MusicQueueManager.getPlayableSong(song) {playable ->
                     if(playable != null) {
-                        MusicService.Companion.play(
+                        MusicService.play(
                             playable.url,
                             requireContext(),
                             title = playable.title,
@@ -145,7 +135,6 @@ class PlayerFragment : Fragment() {
                             cover = playable.cover?:"",
                             coverXL = playable.coverXL?:""
                         )
-                        queueAdapter.notifyDataSetChanged()
                     } else
                         Snackbar.make(requireView(), "Can't play next song", Snackbar.LENGTH_LONG).show()
                 }
@@ -156,7 +145,7 @@ class PlayerFragment : Fragment() {
             prev?.let { song ->
                 MusicQueueManager.getPlayableSong(song) { playable ->
                     if (playable != null) {
-                        MusicService.Companion.play(
+                        MusicService.play(
                             playable.url,
                             requireContext(),
                             title = playable.title,
@@ -164,92 +153,16 @@ class PlayerFragment : Fragment() {
                             cover = playable.cover ?: "",
                             coverXL = playable.coverXL ?: "",
                         )
-                        queueAdapter.notifyDataSetChanged()
                     } else
-                        Snackbar.make(requireView(), "Không thể phát bài trước đó", Snackbar.LENGTH_LONG).show()
+                        Snackbar.make(requireView(), "Invalid song", Snackbar.LENGTH_LONG).show()
                 }
             }
         }
-
-        rvQueue.layoutManager = LinearLayoutManager(requireContext())
-        queueAdapter = SongAdapter(MusicQueueManager.getQueue()) { song ->
-            MusicQueueManager.getPlayableSong(song) { playable ->
-                if (playable != null) {
-                    MusicQueueManager.setCurrentSong(playable)
-                    MusicService.Companion.play(
-                        playable.url,
-                        requireContext(),
-                        title = playable.title,
-                        artist = playable.artist,
-                        cover = playable.cover ?: "",
-                        coverXL = playable.coverXL ?: ""
-                    )
-                    queueAdapter.notifyDataSetChanged()
-                } else {
-                    Snackbar.make(
-                        requireView(),
-                        "Invalid song, try delete from queue and retry!",
-                        Snackbar.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-        rvQueue.adapter = queueAdapter
-        queueAdapter.notifyDataSetChanged()
-
-        val itemTouchHelper =
-            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-                override fun onMove(
-                    recyclerView: RecyclerView,
-                    viewHolder: RecyclerView.ViewHolder,
-                    target: RecyclerView.ViewHolder
-                ): Boolean = false
-                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                    val position = viewHolder.bindingAdapterPosition
-                    val song = MusicQueueManager.getQueue()[position]
-                    val isCurrent = (song == MusicQueueManager.getCurrent())
-                    MusicQueueManager.remove(song)
-                    queueAdapter.notifyItemRemoved(position)
-                    if (isCurrent) {
-                        val next = MusicQueueManager.getCurrent()
-                        if (next != null) {
-                            MusicQueueManager.getPlayableSong(next) { playable ->
-                                if (playable != null) {
-                                    MusicService.Companion.play(
-                                        playable.url,
-                                        requireContext(),
-                                        title = playable.title,
-                                        artist = playable.artist,
-                                        cover = playable.cover ?: "",
-                                        coverXL = playable.coverXL ?: "",
-                                    )
-                                } else
-                                    Snackbar.make(
-                                        requireView(),
-                                        "Không thể phát bài kế tiếp",
-                                        Snackbar.LENGTH_LONG
-                                    ).show()
-                            }
-                        }
-                        else {
-                            MusicService.Companion.next(requireContext())
-                        }
-                    }
-                }
-
-            })
-        itemTouchHelper.attachToRecyclerView(rvQueue)
 
         val btnQueue = view.findViewById<AppCompatImageButton>(R.id.playlist_play)
         btnQueue.setOnClickListener {
-            if (rvQueue.isGone) {
-                rvQueue.visibility = View.VISIBLE
-                coverImage.visibility = View.GONE
-                queueAdapter.notifyDataSetChanged()
-            } else {
-                rvQueue.visibility = View.GONE
-                coverImage.visibility = View.VISIBLE
-            }
+            val queueFragment = QueueFragment()
+            queueFragment.show(parentFragmentManager, "QueueFragmentTag")
         }
         btnQueue.setOnLongClickListener {
             val intent = Intent(requireContext(), MusicService::class.java).apply {
@@ -258,6 +171,57 @@ class PlayerFragment : Fragment() {
             requireContext().startForegroundService(intent)
             Snackbar.make(requireView(), "Queue deleted", Snackbar.LENGTH_SHORT).show()
             true
+        }
+        coverImage.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialTouchY = event.rawY
+                    isDragging = false
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaY = event.rawY - initialTouchY
+                    if (deltaY > 0) {
+                        isDragging = true
+                        view.translationY = deltaY
+                        view.alpha = 1.0f - (deltaY / view.height.toFloat())
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (isDragging) {
+                        val deltaY = view.translationY
+                        val threshold = view.height / 3
+
+                        if (deltaY > threshold) {
+                            ObjectAnimator.ofFloat(view, "translationY", view.height.toFloat()).apply {
+                                duration = 200
+                                start()
+                            }
+                            ObjectAnimator.ofFloat(view, "alpha", 0f).apply {
+                                duration = 200
+                                start()
+                            }
+                            parentFragmentManager.beginTransaction().hide(this).commit()
+                        } else {
+                            ObjectAnimator.ofFloat(view, "translationY", 0f).apply {
+                                duration = 200
+                                start()
+                            }
+                            ObjectAnimator.ofFloat(view, "alpha", 1f).apply {
+                                duration = 200
+                                start()
+                            }
+                        }
+                    } else {
+                        // Đây là một cú NHẤN (CLICK)
+                        v.performClick()
+                    }
+                    isDragging = false
+                    true
+                }
+                else -> false
+            }
         }
     }
 
@@ -295,5 +259,43 @@ class PlayerFragment : Fragment() {
         val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
         val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) % 60
         return String.format("%d:%02d", minutes, seconds)
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        val currentView = view ?: return
+
+        if (hidden) {
+            currentView.translationY = 0f
+            currentView.alpha = 1f
+        } else {
+            currentView.translationY = currentView.height.toFloat()
+            currentView.alpha = 0f
+            ObjectAnimator.ofFloat(currentView, "translationY", 0f).apply {
+                duration = 300
+                start()
+            }
+            ObjectAnimator.ofFloat(currentView, "alpha", 1f).apply {
+                duration = 300
+                start()
+            }
+        }
+    }
+
+    fun dismissWithAnimation() {
+        val currentView = view ?: return
+        ObjectAnimator.ofFloat(currentView, "translationY", currentView.height.toFloat()).apply {
+            duration = 300
+            start()
+        }
+        ObjectAnimator.ofFloat(currentView, "alpha", 0f).apply {
+            duration = 300
+            doOnEnd {
+                if (isAdded) {
+                    parentFragmentManager.beginTransaction().hide(this@PlayerFragment).commit()
+                }
+            }
+            start()
+        }
     }
 }

@@ -66,4 +66,10 @@ object MusicQueueManager {
         currentIndex = -1
         callback(null)
     }
+    fun getNextSong(): Song? {
+        if (currentIndex == -1 || currentIndex + 1 >= queue.size) {
+            return null
+        }
+        return queue[currentIndex + 1]
+    }
 }

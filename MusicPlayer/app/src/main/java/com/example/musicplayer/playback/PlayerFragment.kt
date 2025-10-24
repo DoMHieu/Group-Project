@@ -29,9 +29,13 @@ import com.example.musicplayer.R
 import android.view.MotionEvent
 import android.animation.ObjectAnimator
 import android.animation.Animator
+import android.widget.LinearLayout
 import androidx.core.animation.doOnEnd
+import android.widget.ImageButton
+import android.widget.RelativeLayout
 
 class PlayerFragment : Fragment() {
+    private lateinit var fullScreenPlayer: RelativeLayout
     private lateinit var slider: SeekBar
     private lateinit var textCurrentTime: TextView
     private lateinit var textTotalTime: TextView
@@ -43,6 +47,9 @@ class PlayerFragment : Fragment() {
     private lateinit var toolbarSubtitle: TextView
     private var initialTouchY: Float = 0f
     private var isDragging: Boolean = false
+    private lateinit var upNextText: TextView
+    private lateinit var sleepTimerButton: ImageButton
+    private lateinit var playNext: LinearLayout
 
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
@@ -67,18 +74,6 @@ class PlayerFragment : Fragment() {
             } else {
                 coverImage.setImageResource(R.drawable.image_24px)
             }
-
-            val position = intent?.getLongExtra("position", 0L) ?: 0L
-            val duration = intent?.getLongExtra("duration", 0L) ?: 0L
-            if (!isUserSeeking && duration > 0) {
-                if (slider.max != duration.toInt()) {
-                    slider.max = duration.toInt()
-                }
-                slider.progress = position.toInt().coerceAtMost(duration.toInt())
-            }
-            textCurrentTime.text = formatTime(position)
-            textTotalTime.text = if (duration > 0) formatTime(duration) else "--:--"
-
             val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
             playPauseButton.setImageResource(
                 if (isPlaying) R.drawable.pause_24px else R.drawable.play
@@ -87,7 +82,22 @@ class PlayerFragment : Fragment() {
             val isRepeating = intent?.getBooleanExtra("isRepeating", false) ?: false
             repeatButton.setImageResource(
                 if (isRepeating) R.drawable.repeat_one_24px else R.drawable.repeat
-            )
+            );updateUpNextText()
+        }
+    }
+    private val seekbarReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val position = intent?.getLongExtra("position", 0L) ?: 0L
+            val duration = intent?.getLongExtra("duration", 0L) ?: 0L
+
+            if (!isUserSeeking && duration > 0) {
+                if (slider.max != duration.toInt()) {
+                    slider.max = duration.toInt()
+                }
+                slider.progress = position.toInt().coerceAtMost(duration.toInt())
+            }
+            textCurrentTime.text = formatTime(position)
+            textTotalTime.text = if (duration > 0) formatTime(duration) else "--:--"
         }
     }
 
@@ -99,14 +109,17 @@ class PlayerFragment : Fragment() {
     @SuppressLint("NotifyDataSetChanged", "ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        slider = view.findViewById(R.id.progressSlider)
-        textCurrentTime = view.findViewById(R.id.songCurrentProgress)
-        textTotalTime = view.findViewById(R.id.songTotalTime)
+        upNextText = view.findViewById(R.id.text_up_next)
+        sleepTimerButton = view.findViewById(R.id.button_sleep_timer)
+        playNext = view.findViewById(R.id.up_next_bar);updateUpNextText()
+        slider = view.findViewById(R.id.seekBar)
+        textCurrentTime = view.findViewById(R.id.current_time)
+        textTotalTime = view.findViewById(R.id.total_time)
         playPauseButton = view.findViewById(R.id.playPauseButton)
         repeatButton = view.findViewById(R.id.repeatButton)
         coverImage = view.findViewById(R.id.imageView)
-        toolbarTitle = view.findViewById(R.id.toolbarTitle)
-        toolbarSubtitle = view.findViewById(R.id.toolbarSubtitle)
+        toolbarTitle = view.findViewById(R.id.titleTextView)
+        toolbarSubtitle = view.findViewById(R.id.artistTextView)
         playPauseButton.setOnClickListener { sendMusicCommand("TOGGLE_PLAY") }
         repeatButton.setOnClickListener { sendMusicCommand("TOGGLE_REPEAT") }
         slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -121,7 +134,7 @@ class PlayerFragment : Fragment() {
         })
 
         val nextButton = view.findViewById<ImageView>(R.id.nextButton)
-        val previousButton = view.findViewById<ImageView>(R.id.previousButton)
+        val previousButton = view.findViewById<ImageView>(R.id.prevButton)
         nextButton.setOnClickListener {
             val next = MusicQueueManager.playNext()
             next?.let {song ->
@@ -160,7 +173,7 @@ class PlayerFragment : Fragment() {
         }
 
         val btnQueue = view.findViewById<AppCompatImageButton>(R.id.playlist_play)
-        btnQueue.setOnClickListener {
+        playNext.setOnClickListener {
             val queueFragment = QueueFragment()
             queueFragment.show(parentFragmentManager, "QueueFragmentTag")
         }
@@ -172,7 +185,8 @@ class PlayerFragment : Fragment() {
             Snackbar.make(requireView(), "Queue deleted", Snackbar.LENGTH_SHORT).show()
             true
         }
-        coverImage.setOnTouchListener { v, event ->
+        val fullscreen = view.findViewById<RelativeLayout>(R.id.relativelayout)
+        fullscreen.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialTouchY = event.rawY
@@ -214,7 +228,6 @@ class PlayerFragment : Fragment() {
                             }
                         }
                     } else {
-                        // Đây là một cú NHẤN (CLICK)
                         v.performClick()
                     }
                     isDragging = false
@@ -222,6 +235,9 @@ class PlayerFragment : Fragment() {
                 }
                 else -> false
             }
+        }
+        sleepTimerButton.setOnClickListener {
+            showSleepTimerDialog()
         }
     }
 
@@ -239,11 +255,27 @@ class PlayerFragment : Fragment() {
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
         }
+        val requestUiIntent = Intent(requireContext(), MusicService::class.java).apply {
+            action = MusicService.ACTION_REQUEST_UI_UPDATE
+        }
+        requireContext().startService(requestUiIntent)
+        val seekbarFilter = IntentFilter(MusicService.ACTION_SEEKBAR_UPDATE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requireContext().registerReceiver(seekbarReceiver, seekbarFilter, Context.RECEIVER_EXPORTED)
+        } else {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                seekbarReceiver,
+                seekbarFilter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
     }
 
     override fun onStop() {
         super.onStop()
         requireContext().unregisterReceiver(musicReceiver)
+        requireContext().unregisterReceiver(seekbarReceiver)
     }
 
     private fun sendMusicCommand(action: String, seekTo: Long? = null) {
@@ -297,5 +329,39 @@ class PlayerFragment : Fragment() {
             }
             start()
         }
+    }
+
+    private fun updateUpNextText() {
+        val nextSong = MusicQueueManager.getNextSong()
+        if (nextSong != null) {
+            upNextText.text = getString(R.string.up_next_format, nextSong.title)
+        } else {
+            upNextText.text = "Empty Queue"
+        }
+    }
+
+    private fun showSleepTimerDialog() {
+        val context = requireContext()
+        val options = arrayOf("5 mins","15 mins", "30 mins", "60 mins", "End Queue", "Timer off")
+        val durationsMs = longArrayOf(5*60*1000L ,15 * 60 * 1000L, 30 * 60 * 1000L, 60 * 60 * 1000L, -1L, 0L)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+            .setTitle("Set Timer")
+            .setItems(options) { dialog, which ->
+                val selectedDurationMs = durationsMs[which]
+                val timerIntent = Intent(context, MusicService::class.java).apply {
+                    action = MusicService.ACTION_SET_SLEEP_TIMER
+                    putExtra(MusicService.EXTRA_TIMER_DURATION_MS, selectedDurationMs)
+                }
+                context.startService(timerIntent)
+                if (selectedDurationMs > 0) {
+                    Snackbar.make(requireView(), "Timer on: ${options[which]}", Snackbar.LENGTH_SHORT).show()
+                } else if (selectedDurationMs == 0L) {
+                    Snackbar.make(requireView(), "Timer Disabled", Snackbar.LENGTH_SHORT).show()
+                } else {
+                    Snackbar.make(requireView(), "Automatic end after queue", Snackbar.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
     }
 }

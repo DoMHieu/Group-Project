@@ -83,6 +83,10 @@ class MiniPlayerFragment : Fragment() {
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
         }
+        val requestUiIntent = Intent(requireContext(), MusicService::class.java).apply {
+            action = MusicService.ACTION_REQUEST_UI_UPDATE
+        }
+        requireContext().startService(requestUiIntent)
     }
 
     override fun onStop() {

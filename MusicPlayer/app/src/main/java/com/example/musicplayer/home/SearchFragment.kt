@@ -22,6 +22,8 @@ import com.example.musicplayer.api.SoundCloudResponseItem
 import com.google.android.material.snackbar.Snackbar
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 
 class SearchFragment : Fragment() {
     private lateinit var searchInput: EditText
@@ -30,9 +32,12 @@ class SearchFragment : Fragment() {
     private val songs = mutableListOf<Song>()
     private lateinit var suggestionsRecyclerView: RecyclerView
     private lateinit var suggestionsAdapter: SuggestionsAdapter
-    private val allKeywords = listOf("love story", "summer vibe", "dance monkey",
-        "rockstar", "acoustic covers", "lofi chill", "happy songs", "electronic music",
+    private val allKeywords = listOf("Hatsune Miku", "Summer Pockets", "Doriko",
+        "Native Faith", "U.N.Owen was her", "Septette for the dead princess", "Touhou", "Monitoring",
         "deco*27", "PinocchioP")
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+    private var currentSearchCall: Call<List<SoundCloudResponseItem>>? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,12 +51,11 @@ class SearchFragment : Fragment() {
         suggestionsRecyclerView = view.findViewById(R.id.suggestionsRecyclerView)
         setupResultsRecyclerView()
         setupSuggestionsRecyclerView()
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
         searchInput.setOnEditorActionListener { textView, actionId, event ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
                 val query = searchInput.text.toString().trim()
                 if (query.isNotEmpty()) {
+                    searchRunnable?.let { searchHandler.removeCallbacks(it) }
                     showSuggestions(false)
                     hideKeyboard()
                     searchInput.clearFocus()
@@ -65,46 +69,65 @@ class SearchFragment : Fragment() {
 
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {searchRunnable?.let { searchHandler.removeCallbacks(it) }}
             @SuppressLint("NotifyDataSetChanged")
             override fun afterTextChanged(s: Editable?) {
                 val query= s.toString().trim()
-                if(query.isNotEmpty()){
-                    val filteredSuggestions = allKeywords.filter { it.contains(query,ignoreCase = true) }
-                    suggestionsAdapter.updateSuggestions(filteredSuggestions)
-                    showSuggestions(true)
+                searchRunnable = Runnable {
+                    if(query.isNotEmpty()){
+                        val filteredSuggestions = allKeywords.filter { it.contains(query,ignoreCase = true) }
+                        suggestionsAdapter.updateSuggestions(filteredSuggestions)
+                        showSuggestions(true)
+                    }
+                    else {
+                        showSuggestions(false)
+                        songs.clear()
+                        adapter.notifyDataSetChanged()
+                    }
                 }
-                else {
-                    showSuggestions(false)
-                    songs.clear()
-                    adapter.notifyDataSetChanged()
-                }
+                searchHandler.postDelayed(searchRunnable!!, 300)
             }})}
+
+    override fun onDestroyView() {
+        searchRunnable?.let { searchHandler.removeCallbacks(it) }
+        currentSearchCall?.cancel()
+        recyclerView.adapter = null
+        suggestionsRecyclerView.adapter = null
+        super.onDestroyView()
+    }
 
     private fun setupResultsRecyclerView() {
         adapter = SongAdapter(
             songs,
             onClick = { song ->
                 MusicQueueManager.getPlayableSong(song) { playable ->
+                    if (!isAdded) return@getPlayableSong
+
                     if (playable != null) {
                         MusicQueueManager.add(playable)
                         MusicQueueManager.setCurrentSong(playable)
-                        MusicService.play(
-                            playable.url,
-                            requireContext(),
-                            title = playable.title,
-                            artist = playable.artist,
-                            cover = playable.cover ?: "",
-                            coverXL = playable.coverXL ?: ""
-                        )
+                        context?.let { ctx ->
+                            MusicService.play(
+                                playable.url,
+                                ctx,
+                                title = playable.title,
+                                artist = playable.artist,
+                                cover = playable.cover ?: "",
+                                coverXL = playable.coverXL ?: ""
+                            )
+                        }
                     } else {
-                        Snackbar.make(requireView(), "Can't play this song", Snackbar.LENGTH_LONG).show()
+                        view?.let {
+                            Snackbar.make(it, "Can't play this song", Snackbar.LENGTH_LONG).show()
+                        }
                     }
                 }
             },
             onLongClick = { song ->
-                MusicQueueManager.add(song)
-                Snackbar.make(requireView(), "Queue added", Snackbar.LENGTH_SHORT).show()
+                view?.let {
+                    MusicQueueManager.add(song)
+                    Snackbar.make(it, "Queue added", Snackbar.LENGTH_SHORT).show()
+                }
             }
         )
 
@@ -113,14 +136,16 @@ class SearchFragment : Fragment() {
     }
 
     private fun setupSuggestionsRecyclerView() {
-        suggestionsAdapter= SuggestionsAdapter(emptyList()) {
-            suggestion ->
+        suggestionsAdapter = SuggestionsAdapter(emptyList()) { suggestion ->
             searchInput.setText(suggestion)
             searchInput.clearFocus()
             hideKeyboard()
             showSuggestions(false)
+            searchRunnable?.let { searchHandler.removeCallbacks(it) }
             searchSongs(suggestion)
         }
+        suggestionsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        suggestionsRecyclerView.adapter = suggestionsAdapter
     }
     private fun showSuggestions(show: Boolean) {
         suggestionsRecyclerView.visibility = if (show) View.VISIBLE else View.GONE
@@ -132,7 +157,9 @@ class SearchFragment : Fragment() {
         imm?.hideSoftInputFromWindow(view?.windowToken, 0)
     }
     private fun searchSongs(keyword: String) {
-        RetrofitClient.api.searchTrack(keyword).enqueue(object : Callback<List<SoundCloudResponseItem>> {
+        currentSearchCall?.cancel()
+        currentSearchCall = RetrofitClient.api.searchTrack(keyword)
+        currentSearchCall?.enqueue(object : Callback<List<SoundCloudResponseItem>> {
             @SuppressLint("NotifyDataSetChanged")
             override fun onResponse(
                 call: Call<List<SoundCloudResponseItem>>,
@@ -156,18 +183,22 @@ class SearchFragment : Fragment() {
                             lastFetchTime = 0L
                         )
                     })
-
                     adapter.notifyDataSetChanged()
                 } else {
                     view?.let {
-                        Snackbar.make(it, "Lỗi khi tìm kiếm", Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(it, "Invalid", Snackbar.LENGTH_SHORT).show()
                     }
                 }
             }
-
             override fun onFailure(call: Call<List<SoundCloudResponseItem>>, t: Throwable) {
+                if (call.isCanceled) {
+                    return
+                }
+                if (!isAdded) return
                 t.printStackTrace()
-                Snackbar.make(requireView(), "Lỗi kết nối", Snackbar.LENGTH_SHORT).show()
+                view?.let {
+                    Snackbar.make(it, "Lỗi kết nối", Snackbar.LENGTH_SHORT).show()
+                }
             }
         })
     }

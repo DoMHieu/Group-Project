@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:clickable="true"
     android:focusable="true"
-    android:background="@color/md_theme_light_surface"
+    android:id="@+id/relativelayout"
     tools:context=".playback.PlayerFragment">
 
     <LinearLayout
@@ -14,19 +15,20 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingBottom="140sp"
-        android:background="?attr/colorSurface">
+        android:paddingBottom="50sp"
+        android:layout_above="@id/up_next_bar">
 
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
+
             <ImageView
                 android:id="@+id/imageView"
-                android:layout_width="350dp"
-                android:layout_height="350dp"
+                android:layout_width="370dp"
+                android:layout_height="370dp"
                 android:layout_gravity="center"
-                android:layout_margin="16dp"
+                android:layout_margin="10dp"
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/avatars" />
 
@@ -36,97 +38,75 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:paddingStart="32dp"
-            android:paddingEnd="32dp"
-            android:paddingBottom="16dp">
+            android:paddingTop="0dp"
+            android:padding="16dp">
 
-            <FrameLayout
+            <com.example.musicplayer.utils.MarqueeTextView
+                android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <com.example.musicplayer.utils.MarqueeTextView
-                    android:id="@+id/toolbarTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever"
-                    android:singleLine="true"
-                    android:scrollHorizontally="true"
-                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                    android:textStyle="bold"
-                    tools:text="Tên một bài hát rất dài để test hiệu ứng chạy chữ" />
-
-            </FrameLayout>
+                android:layout_height="wrap_content"
+                android:ellipsize="marquee"
+                android:gravity="center"
+                android:singleLine="true"
+                android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                tools:text="Tên bài hát" />
 
             <TextView
-                android:id="@+id/toolbarSubtitle"
+                android:id="@+id/artistTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:gravity="center"
                 android:ellipsize="end"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                android:textColor="?android:attr/textColorSecondary"
+                android:gravity="center"
+                android:singleLine="true"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="Tên nghệ sĩ" />
-
         </LinearLayout>
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/ProgressLayout"
+        <SeekBar
+            android:id="@+id/seekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp" />
 
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/songCurrentProgress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="40dp"
-                android:gravity="center"
-                android:singleLine="true"
-                tools:text="0:00"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@id/progressSlider"
-                app:layout_constraintBottom_toBottomOf="@id/progressSlider"
-                app:layout_constraintEnd_toStartOf="@id/progressSlider"/>
-
-            <SeekBar
-                android:id="@+id/progressSlider"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:maxHeight="2dp"
-                app:layout_constraintStart_toEndOf="@id/songCurrentProgress"
-                app:layout_constraintEnd_toStartOf="@id/songTotalTime"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/songTotalTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="40dp"
-                android:gravity="center"
-                android:singleLine="true"
-                tools:text="3:45"
-                app:layout_constraintStart_toEndOf="@id/progressSlider"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/progressSlider"
-                app:layout_constraintBottom_toBottomOf="@id/progressSlider"/>
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <GridLayout
-            android:id="@+id/buttonGrid"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:columnCount="5"
-            android:useDefaultMargins="true"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingBottom="10sp"
+            android:paddingEnd="24dp">
+
+            <TextView
+                android:id="@+id/current_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00"
+                tools:ignore="HardcodedText" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/total_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00"
+                tools:ignore="HardcodedText" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingVertical="10dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/repeatButton"
@@ -134,25 +114,34 @@
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="16dp"
-                app:srcCompat="@drawable/repeat" />
+                app:srcCompat="@drawable/repeat"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
             <androidx.appcompat.widget.AppCompatImageButton
-                android:id="@+id/previousButton"
+                android:id="@+id/prevButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="16dp"
-                app:srcCompat="@drawable/skip_previous_24px" />
+                app:srcCompat="@drawable/skip_previous_24px"
+                app:tint="?attr/colorOnSurfaceVariant" />
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/playPauseButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
                 android:background="@drawable/bg_circle_button"
-                android:padding="16dp"
+                android:padding="24dp"
                 android:scaleType="centerInside"
                 app:srcCompat="@drawable/play"
-                />
+                app:tint="?attr/colorOnPrimaryContainer" />
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/nextButton"
@@ -160,7 +149,13 @@
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="16dp"
-                app:srcCompat="@drawable/skip_next_24px" />
+                app:srcCompat="@drawable/skip_next_24px"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/playlist_play"
@@ -168,7 +163,58 @@
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="16dp"
-                app:srcCompat="@drawable/playlist_play" />
-        </GridLayout>
+                app:srcCompat="@drawable/playlist_play"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+        </LinearLayout>
     </LinearLayout>
-</FrameLayout>
+    <LinearLayout
+        android:id="@+id/up_next_bar"
+        android:paddingBottom="30sp"
+        android:paddingTop="2sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:background="@drawable/round_background">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/playlist_play" />
+
+        <com.example.musicplayer.utils.MarqueeTextView
+            android:id="@+id/text_up_next"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="Up next: Another Song Title" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/button_sleep_timer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="12dp"
+            android:src="@drawable/timer_24px"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="12dp"
+            android:src="@drawable/more_horiz_24px"
+            app:tint="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
+</RelativeLayout>

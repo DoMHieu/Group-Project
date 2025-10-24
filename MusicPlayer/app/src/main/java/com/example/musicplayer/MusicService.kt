@@ -28,6 +28,8 @@ import com.example.musicplayer.home.Song
 import com.example.musicplayer.playback.MusicQueueManager
 
 class MusicService : Service() {
+    private val timerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var sleepTimerRunnable: Runnable? = null
     override fun onBind(intent: Intent?): IBinder? = null
     private lateinit var exoPlayer: ExoPlayer
     private val handler = Handler(Looper.getMainLooper())
@@ -39,7 +41,11 @@ class MusicService : Service() {
     private var coverXL: String = ""
     private lateinit var mediaSession: MediaSessionCompat
 
-    companion object { //static data in kotlin
+    companion object {
+        const val ACTION_SET_SLEEP_TIMER = "com.example.musicplayer.ACTION_SET_SLEEP_TIMER"
+        const val EXTRA_TIMER_DURATION_MS = "com.example.musicplayer.EXTRA_TIMER_DURATION_MS"
+        const val ACTION_SEEKBAR_UPDATE = "MUSIC_SEEKBAR_UPDATE"
+        const val ACTION_REQUEST_UI_UPDATE = "com.example.musicplayer.ACTION_REQUEST_UI_UPDATE"
         fun play(        // Start playing a specific song
             url: String,
             context: Context,
@@ -68,8 +74,7 @@ class MusicService : Service() {
     private val updateRunnable = object : Runnable { //create Runnable data
         override fun run() {
             if (::exoPlayer.isInitialized) {
-                sendProgressBroadcast()
-                updatePlaybackState()
+                sendSeekbarUpdate()
             }
             handler.postDelayed(this, 1000)
         }
@@ -103,6 +108,13 @@ class MusicService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.action?.let { action ->
             when (action) {
+                ACTION_SET_SLEEP_TIMER -> {
+                    val durationMs = intent.getLongExtra(EXTRA_TIMER_DURATION_MS, 0L)
+                    setSleepTimer(durationMs)
+                }
+                ACTION_REQUEST_UI_UPDATE -> {
+                    sendProgressBroadcast()
+                }
                 "TOGGLE_PLAY" -> {
                     if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
                     updateNotification()
@@ -127,7 +139,6 @@ class MusicService : Service() {
                 }
 
                 "PLAY_URL" -> {
-                    // Safe extraction: use elvis operator to avoid nullable assignment issues
                     val url = intent.getStringExtra("URL") ?: return START_NOT_STICKY
                     currentTitle = intent.getStringExtra("TITLE") ?: ""
                     currentArtist = intent.getStringExtra("ARTIST") ?: ""
@@ -267,8 +278,6 @@ class MusicService : Service() {
             val isPlaying = exoPlayer.isPlaying
             val isRepeating = exoPlayer.repeatMode == ExoPlayer.REPEAT_MODE_ONE
             val intent = Intent("MUSIC_PROGRESS_UPDATE").apply {
-                putExtra("position", position)
-                putExtra("duration", duration)
                 putExtra("isPlaying", isPlaying)
                 putExtra("isRepeating", isRepeating)
                 putExtra("title", currentTitle)
@@ -394,6 +403,41 @@ class MusicService : Service() {
                 })
         } else {
             mediaSession.setMetadata(metadataBuilder.build())
+        }
+    }
+    private fun setSleepTimer(durationMs: Long) {
+        sleepTimerRunnable?.let { timerHandler.removeCallbacks(it) }
+        sleepTimerRunnable = null
+        when {
+            durationMs > 0 -> {
+                sleepTimerRunnable = Runnable {
+                    if (::exoPlayer.isInitialized && exoPlayer.isPlaying) {
+                        exoPlayer.pause()
+                        updateNotification()
+                        updatePlaybackState()
+                        sendProgressBroadcast()
+                    }
+                }
+                timerHandler.postDelayed(sleepTimerRunnable!!, durationMs)
+            }
+            durationMs == -1L -> {
+                if (::exoPlayer.isInitialized) {
+                    exoPlayer.repeatMode = ExoPlayer.REPEAT_MODE_OFF
+                }
+                sendProgressBroadcast()
+            }
+        }
+    }
+    //Seekbar info
+    private fun sendSeekbarUpdate() {
+        if (::exoPlayer.isInitialized) {
+            val duration = if (exoPlayer.duration == C.TIME_UNSET) 0L else exoPlayer.duration
+            val position = exoPlayer.currentPosition
+            val intent = Intent(ACTION_SEEKBAR_UPDATE).apply {
+                putExtra("position", position)
+                putExtra("duration", duration)
+            }
+            sendBroadcast(intent)
         }
     }
 }

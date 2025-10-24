@@ -1,17 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:padding="12dp"
     android:gravity="center_vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
-
-    <ImageView
-        android:id="@+id/songCover"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/image_24px"
-        android:layout_marginEnd="12dp"/>
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"> <ImageView
+    android:id="@+id/songCover"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    android:scaleType="centerCrop"
+    android:src="@drawable/image_24px"
+    android:layout_marginEnd="12dp"/>
 
     <LinearLayout
         android:orientation="vertical"
@@ -21,28 +21,23 @@
 
         <TextView
             android:id="@+id/songTitle"
-            android:textSize="16sp"
-            android:textStyle="bold"
             android:ellipsize="end"
             android:singleLine="true"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-        <TextView
-            android:id="@+id/songArtist"
-            android:textSize="14sp"
-            android:textColor="#666"
-            android:ellipsize="end"
-            android:singleLine="true"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceTitleMedium" /> <TextView
+        android:id="@+id/songArtist"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" /> </LinearLayout>
 
     <ImageView
         android:id="@+id/playingIcon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/play"
-        android:visibility="gone"
-        android:layout_marginStart="8dp"/>
-</LinearLayout>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:src="@drawable/music_note_24px"
+        android:visibility="gone" /> </LinearLayout>

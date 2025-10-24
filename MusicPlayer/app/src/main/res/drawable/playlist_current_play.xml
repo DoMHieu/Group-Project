@@ -1,7 +1,4 @@
-<!-- res/drawable/item_border_solid.xml -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Fill color (solid background) -->
-    <solid android:color="@color/md_theme_dark_primary" />
-
+    <solid android:color="?attr/colorPrimaryContainer" />
     <corners android:radius="10dp" />
 </shape>

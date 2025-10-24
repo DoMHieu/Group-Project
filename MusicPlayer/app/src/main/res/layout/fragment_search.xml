@@ -5,11 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-<<<<<<< HEAD
     android:background="?attr/colorSurface"
-=======
-    android:background="@color/md_theme_light_surface"
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
     android:clickable="true"
     android:focusable="true"
     android:padding="8dp">

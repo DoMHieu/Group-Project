@@ -4,16 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-<<<<<<< HEAD
     android:background="?attr/colorSurface"
     android:clickable="true"
     android:focusable="true"
     android:id="@+id/relativelayout"
-=======
-    android:clickable="true"
-    android:focusable="true"
-    android:background="@color/md_theme_light_surface"
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
     tools:context=".playback.PlayerFragment">
 
     <LinearLayout
@@ -21,13 +15,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-<<<<<<< HEAD
         android:paddingBottom="50sp"
         android:layout_above="@id/up_next_bar">
-=======
-        android:paddingBottom="140sp"
-        android:background="?attr/colorSurface">
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -173,6 +162,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
+
                 android:padding="16dp"
                 app:srcCompat="@drawable/playlist_play"
                 app:tint="?attr/colorOnSurfaceVariant" />

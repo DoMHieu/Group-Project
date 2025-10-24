@@ -29,14 +29,10 @@ import com.example.musicplayer.R
 import android.view.MotionEvent
 import android.animation.ObjectAnimator
 import android.animation.Animator
-<<<<<<< HEAD
 import android.widget.LinearLayout
 import androidx.core.animation.doOnEnd
 import android.widget.ImageButton
 import android.widget.RelativeLayout
-=======
-import androidx.core.animation.doOnEnd
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
 
 class PlayerFragment : Fragment() {
     private lateinit var fullScreenPlayer: RelativeLayout
@@ -51,12 +47,9 @@ class PlayerFragment : Fragment() {
     private lateinit var toolbarSubtitle: TextView
     private var initialTouchY: Float = 0f
     private var isDragging: Boolean = false
-<<<<<<< HEAD
     private lateinit var upNextText: TextView
     private lateinit var sleepTimerButton: ImageButton
     private lateinit var playNext: LinearLayout
-=======
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
 
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
@@ -92,7 +85,6 @@ class PlayerFragment : Fragment() {
             );updateUpNextText()
         }
     }
-<<<<<<< HEAD
     private val seekbarReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val position = intent?.getLongExtra("position", 0L) ?: 0L
@@ -108,8 +100,6 @@ class PlayerFragment : Fragment() {
             textTotalTime.text = if (duration > 0) formatTime(duration) else "--:--"
         }
     }
-=======
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
 
     override fun onCreateView(inflater: LayoutInflater,container: ViewGroup?,savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_player, container, false)
@@ -128,13 +118,8 @@ class PlayerFragment : Fragment() {
         playPauseButton = view.findViewById(R.id.playPauseButton)
         repeatButton = view.findViewById(R.id.repeatButton)
         coverImage = view.findViewById(R.id.imageView)
-<<<<<<< HEAD
         toolbarTitle = view.findViewById(R.id.titleTextView)
         toolbarSubtitle = view.findViewById(R.id.artistTextView)
-=======
-        toolbarTitle = view.findViewById(R.id.toolbarTitle)
-        toolbarSubtitle = view.findViewById(R.id.toolbarSubtitle)
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
         playPauseButton.setOnClickListener { sendMusicCommand("TOGGLE_PLAY") }
         repeatButton.setOnClickListener { sendMusicCommand("TOGGLE_REPEAT") }
         slider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -188,11 +173,7 @@ class PlayerFragment : Fragment() {
         }
 
         val btnQueue = view.findViewById<AppCompatImageButton>(R.id.playlist_play)
-<<<<<<< HEAD
         playNext.setOnClickListener {
-=======
-        btnQueue.setOnClickListener {
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
             val queueFragment = QueueFragment()
             queueFragment.show(parentFragmentManager, "QueueFragmentTag")
         }
@@ -204,12 +185,8 @@ class PlayerFragment : Fragment() {
             Snackbar.make(requireView(), "Queue deleted", Snackbar.LENGTH_SHORT).show()
             true
         }
-<<<<<<< HEAD
         val fullscreen = view.findViewById<RelativeLayout>(R.id.relativelayout)
         fullscreen.setOnTouchListener { v, event ->
-=======
-        coverImage.setOnTouchListener { v, event ->
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialTouchY = event.rawY
@@ -251,10 +228,6 @@ class PlayerFragment : Fragment() {
                             }
                         }
                     } else {
-<<<<<<< HEAD
-=======
-                        // Đây là một cú NHẤN (CLICK)
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
                         v.performClick()
                     }
                     isDragging = false
@@ -263,12 +236,9 @@ class PlayerFragment : Fragment() {
                 else -> false
             }
         }
-<<<<<<< HEAD
         sleepTimerButton.setOnClickListener {
             showSleepTimerDialog()
         }
-=======
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -360,7 +330,6 @@ class PlayerFragment : Fragment() {
             start()
         }
     }
-<<<<<<< HEAD
 
     private fun updateUpNextText() {
         val nextSong = MusicQueueManager.getNextSong()
@@ -395,6 +364,4 @@ class PlayerFragment : Fragment() {
             .setNegativeButton("Hủy", null)
             .show()
     }
-=======
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
 }

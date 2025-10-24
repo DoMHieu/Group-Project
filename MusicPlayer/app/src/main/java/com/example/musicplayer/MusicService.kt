@@ -74,12 +74,7 @@ class MusicService : Service() {
     private val updateRunnable = object : Runnable { //create Runnable data
         override fun run() {
             if (::exoPlayer.isInitialized) {
-<<<<<<< HEAD
                 sendSeekbarUpdate()
-=======
-                sendProgressBroadcast()
-                updatePlaybackState()
->>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
             }
             handler.postDelayed(this, 1000)
         }

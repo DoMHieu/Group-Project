@@ -101,6 +101,7 @@ class SearchFragment : Fragment() {
             songs,
             onClick = { song ->
                 MusicQueueManager.getPlayableSong(song) { playable ->
+<<<<<<< HEAD
                     if (!isAdded) return@getPlayableSong
 
                     if (playable != null) {
@@ -127,7 +128,27 @@ class SearchFragment : Fragment() {
                 view?.let {
                     MusicQueueManager.add(song)
                     Snackbar.make(it, "Queue added", Snackbar.LENGTH_SHORT).show()
+=======
+                    if (playable != null) {
+                        MusicQueueManager.add(playable)
+                        MusicQueueManager.setCurrentSong(playable)
+                        MusicService.play(
+                            playable.url,
+                            requireContext(),
+                            title = playable.title,
+                            artist = playable.artist,
+                            cover = playable.cover ?: "",
+                            coverXL = playable.coverXL ?: ""
+                        )
+                    } else {
+                        Snackbar.make(requireView(), "Can't play this song", Snackbar.LENGTH_LONG).show()
+                    }
+>>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
                 }
+            },
+            onLongClick = { song ->
+                MusicQueueManager.add(song)
+                Snackbar.make(requireView(), "Queue added", Snackbar.LENGTH_SHORT).show()
             }
         )
 

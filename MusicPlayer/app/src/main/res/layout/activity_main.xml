@@ -35,6 +35,10 @@
             android:id="@+id/bottom_navigation"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+<<<<<<< HEAD
+=======
+            android:background="?attr/colorPrimaryContainer"
+>>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

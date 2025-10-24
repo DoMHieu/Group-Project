@@ -26,7 +26,10 @@
         android:layout_marginEnd="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/play"
+<<<<<<< HEAD
         app:tint="?attr/colorOnSurfaceVariant"
+=======
+>>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
@@ -39,7 +42,12 @@
         android:layout_marginEnd="12dp"
         android:ellipsize="marquee"
         android:singleLine="true"
+<<<<<<< HEAD
         android:textAppearance="?attr/textAppearanceTitleSmall"
+=======
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+        android:textStyle="bold"
+>>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
         app:layout_constraintStart_toEndOf="@id/mini_player_cover"
         app:layout_constraintEnd_toStartOf="@id/mini_player_play_pause"
         app:layout_constraintTop_toTopOf="@id/mini_player_cover"
@@ -51,10 +59,18 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:singleLine="true"
+<<<<<<< HEAD
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintStart_toStartOf="@id/mini_player_title"
         app:layout_constraintEnd_toEndOf="@id/mini_player_title"
         app:layout_constraintBottom_toBottomOf="@id/mini_player_cover" />
+=======
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        app:layout_constraintStart_toStartOf="@id/mini_player_title"
+        app:layout_constraintEnd_toEndOf="@id/mini_player_title"
+        app:layout_constraintBottom_toBottomOf="@id/mini_player_cover"
+        tools:text="Tên nghệ sĩ" />
+>>>>>>> c70cff6b3ce7844d91e5a4b74c7171d0add0846b
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -7,8 +7,11 @@ object MusicQueueManager {
     private val queue = mutableListOf<Song>()
     private var currentSong: Song? = null
     private var currentIndex = -1
-    fun add(song: Song) {
+    fun add(song: Song): Boolean {
+        val exists = queue.any {it.id == song.id}
+        if (exists){return false}
         queue.add(song)
+        return true
     }
 
     fun getQueue(): List<Song> = queue
@@ -71,5 +74,16 @@ object MusicQueueManager {
             return null
         }
         return queue[currentIndex + 1]
+    }
+
+    fun moveSongInQueue(fromPosition: Int, toPosition: Int) {
+        if (fromPosition == toPosition ||fromPosition >= queue.size ||toPosition >= queue.size ||
+            fromPosition < 0 || toPosition < 0) {
+            return
+        }
+        val currentSongBeforeMove = getCurrent()
+        val item = queue.removeAt(fromPosition)
+        queue.add(toPosition, item)
+        currentSongBeforeMove?.let{currentIndex = queue.indexOf(it)}
     }
 }

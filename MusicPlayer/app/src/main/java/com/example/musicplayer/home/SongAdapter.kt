@@ -1,5 +1,6 @@
 package com.example.musicplayer.home
 
+import android.annotation.SuppressLint
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
@@ -17,10 +18,12 @@ import com.example.musicplayer.playback.MusicQueueManager
 import com.example.musicplayer.R
 
 class SongAdapter(
-    private val items: List<Song>,
+    private val items: MutableList<Song>,
     private val onClick: (Song) -> Unit,
     private val onLongClick: (Song) -> Unit
 ) : RecyclerView.Adapter<SongAdapter.SongViewHolder>() {
+
+    private var currentSongId: Long? = MusicQueueManager.getCurrent()?.id
 
     inner class SongViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.songTitle)
@@ -28,11 +31,13 @@ class SongAdapter(
         val cover: ImageView = itemView.findViewById(R.id.songCover)
         val playingIcon: ImageView = itemView.findViewById(R.id.playingIcon)
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_song, parent, false)
         return SongViewHolder(view)
     }
+
     override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
         val song = items[position]
         holder.title.text = song.title
@@ -51,21 +56,70 @@ class SongAdapter(
                     .error(R.drawable.image_24px)
             )
             .into(holder.cover)
-        //Highlight playing song
-        val current = MusicQueueManager.getCurrent()
-        if (current != null && current.id == song.id) {
+
+        if (currentSongId != null && currentSongId == song.id) {
             holder.itemView.setBackgroundResource(R.drawable.playlist_current_play)
             holder.playingIcon.visibility = View.VISIBLE
         } else {
             holder.itemView.setBackgroundColor(Color.TRANSPARENT)
             holder.playingIcon.visibility = View.GONE
         }
-        //OnclickListener for queue
+
         holder.itemView.setOnClickListener { onClick(song) }
         holder.itemView.setOnLongClickListener {
             onLongClick(song)
             true
         }
     }
+
     override fun getItemCount(): Int = items.size
+
+    fun onItemMove(fromPosition: Int, toPosition: Int) {
+        val item = items.removeAt(fromPosition)
+        items.add(toPosition, item)
+        notifyItemMoved(fromPosition, toPosition)
+        MusicQueueManager.moveSongInQueue(fromPosition, toPosition)
+    }
+
+    fun removeItemAt(position: Int) {
+        if (position >= 0 && position < items.size) {
+            items.removeAt(position)
+            notifyItemRemoved(position)
+        }
+    }
+
+    fun getSongAt(position: Int): Song? {
+        if (position >= 0 && position < items.size) {
+            return items[position]
+        }
+        return null
+    }
+
+    fun updateCurrentSong() {
+        val newCurrentSong = MusicQueueManager.getCurrent()
+        val newId = newCurrentSong?.id
+        val oldId = currentSongId
+
+        if (newId == oldId) return
+
+        val oldIndex = items.indexOfFirst { it.id == oldId }
+        val newIndex = items.indexOfFirst { it.id == newId }
+
+        currentSongId = newId
+
+        if (oldIndex != -1) {
+            notifyItemChanged(oldIndex)
+        }
+        if (newIndex != -1) {
+            notifyItemChanged(newIndex)
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateQueueList(newList: List<Song>) {
+        items.clear()
+        items.addAll(newList)
+        currentSongId = MusicQueueManager.getCurrent()?.id
+        notifyDataSetChanged()
+    }
 }

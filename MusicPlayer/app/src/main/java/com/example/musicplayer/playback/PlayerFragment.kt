@@ -28,14 +28,14 @@ import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
 import android.view.MotionEvent
 import android.animation.ObjectAnimator
-import android.animation.Animator
 import android.widget.LinearLayout
 import androidx.core.animation.doOnEnd
 import android.widget.ImageButton
 import android.widget.RelativeLayout
+import android.view.VelocityTracker
 
 class PlayerFragment : Fragment() {
-    private lateinit var fullScreenPlayer: RelativeLayout
+    private var velocityTracker: VelocityTracker? = null
     private lateinit var slider: SeekBar
     private lateinit var textCurrentTime: TextView
     private lateinit var textTotalTime: TextView
@@ -50,30 +50,34 @@ class PlayerFragment : Fragment() {
     private lateinit var upNextText: TextView
     private lateinit var sleepTimerButton: ImageButton
     private lateinit var playNext: LinearLayout
-
+    private var currentSongTitle: String = ""
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
-            val title = intent?.getStringExtra("title") ?: ""
-            val artist = intent?.getStringExtra("artist") ?: ""
-            toolbarTitle.text = title
-            toolbarSubtitle.text = artist
-            val coverUrlXL = intent?.getStringExtra("cover_xl") ?: ""
-            if (coverUrlXL.isNotBlank()) {
-                Glide.with(requireContext())
-                    .load(coverUrlXL)
-                    .apply(
-                        RequestOptions.bitmapTransform(
-                            MultiTransformation(CenterCrop(), RoundedCorners(24))
+            val newTitle = intent?.getStringExtra("title") ?: ""
+            val newArtist = intent?.getStringExtra("artist") ?: ""
+            val newCoverUrlXL = intent?.getStringExtra("cover_xl") ?: ""
+            if (newTitle.isNotEmpty() && newTitle != currentSongTitle) {
+                currentSongTitle = newTitle
+                toolbarTitle.text = newTitle
+                toolbarSubtitle.text = newArtist
+                if (newCoverUrlXL.isNotBlank()) {
+                    Glide.with(requireContext())
+                        .load(newCoverUrlXL)
+                        .apply(
+                            RequestOptions.bitmapTransform(
+                                MultiTransformation(CenterCrop(), RoundedCorners(24))
+                            )
+                                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                                .placeholder(R.drawable.image_24px)
+                                .error(R.drawable.image_24px)
                         )
-                            .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
-                            .placeholder(R.drawable.image_24px)
-                            .error(R.drawable.image_24px)
-                    )
-                    .into(coverImage)
-            } else {
-                coverImage.setImageResource(R.drawable.image_24px)
+                        .into(coverImage)
+                } else {
+                    coverImage.setImageResource(R.drawable.image_24px)
+                }
             }
+            updateUpNextText()
             val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
             playPauseButton.setImageResource(
                 if (isPlaying) R.drawable.pause_24px else R.drawable.play
@@ -82,7 +86,7 @@ class PlayerFragment : Fragment() {
             val isRepeating = intent?.getBooleanExtra("isRepeating", false) ?: false
             repeatButton.setImageResource(
                 if (isRepeating) R.drawable.repeat_one_24px else R.drawable.repeat
-            );updateUpNextText()
+            )
         }
     }
     private val seekbarReceiver = object : BroadcastReceiver() {
@@ -171,13 +175,15 @@ class PlayerFragment : Fragment() {
                 }
             }
         }
-
-        val btnQueue = view.findViewById<AppCompatImageButton>(R.id.playlist_play)
         playNext.setOnClickListener {
             val queueFragment = QueueFragment()
             queueFragment.show(parentFragmentManager, "QueueFragmentTag")
         }
-        btnQueue.setOnLongClickListener {
+        val favourite = view.findViewById<AppCompatImageButton>(R.id.favourite)
+        favourite.setOnClickListener {
+            Snackbar.make(requireView(), "Not functionable right now, hold to delete queue", Snackbar.LENGTH_SHORT).show()
+        }
+        favourite.setOnLongClickListener {
             val intent = Intent(requireContext(), MusicService::class.java).apply {
                 action = "CLEAR_QUEUE"
             }
@@ -191,9 +197,13 @@ class PlayerFragment : Fragment() {
                 MotionEvent.ACTION_DOWN -> {
                     initialTouchY = event.rawY
                     isDragging = false
+                    velocityTracker?.clear()
+                    velocityTracker = velocityTracker ?: VelocityTracker.obtain()
+                    velocityTracker?.addMovement(event)
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    velocityTracker?.addMovement(event)
                     val deltaY = event.rawY - initialTouchY
                     if (deltaY > 0) {
                         isDragging = true
@@ -204,10 +214,12 @@ class PlayerFragment : Fragment() {
                 }
                 MotionEvent.ACTION_UP -> {
                     if (isDragging) {
+                        velocityTracker?.computeCurrentVelocity(1000)
+                        val yVelocity = velocityTracker?.yVelocity ?: 0f
+                        val velocityThreshold = 600
+                        val distanceThreshold = view.height * 0.15f
                         val deltaY = view.translationY
-                        val threshold = view.height / 3
-
-                        if (deltaY > threshold) {
+                        if (deltaY > distanceThreshold || yVelocity > velocityThreshold) {
                             ObjectAnimator.ofFloat(view, "translationY", view.height.toFloat()).apply {
                                 duration = 200
                                 start()
@@ -230,7 +242,26 @@ class PlayerFragment : Fragment() {
                     } else {
                         v.performClick()
                     }
+
                     isDragging = false
+                    velocityTracker?.recycle()
+                    velocityTracker = null
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    if (isDragging) {
+                        ObjectAnimator.ofFloat(view, "translationY", 0f).apply {
+                            duration = 200
+                            start()
+                        }
+                        ObjectAnimator.ofFloat(view, "alpha", 1f).apply {
+                            duration = 200
+                            start()
+                        }
+                    }
+                    isDragging = false
+                    velocityTracker?.recycle()
+                    velocityTracker = null
                     true
                 }
                 else -> false
@@ -331,6 +362,7 @@ class PlayerFragment : Fragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun updateUpNextText() {
         val nextSong = MusicQueueManager.getNextSong()
         if (nextSong != null) {

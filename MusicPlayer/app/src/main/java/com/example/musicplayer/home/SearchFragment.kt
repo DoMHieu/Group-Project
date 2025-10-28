@@ -22,6 +22,7 @@ import com.example.musicplayer.api.SoundCloudResponseItem
 import com.google.android.material.snackbar.Snackbar
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 
@@ -102,7 +103,6 @@ class SearchFragment : Fragment() {
             onClick = { song ->
                 MusicQueueManager.getPlayableSong(song) { playable ->
                     if (!isAdded) return@getPlayableSong
-
                     if (playable != null) {
                         MusicQueueManager.add(playable)
                         MusicQueueManager.setCurrentSong(playable)
@@ -115,6 +115,10 @@ class SearchFragment : Fragment() {
                                 cover = playable.cover ?: "",
                                 coverXL = playable.coverXL ?: ""
                             )
+                            val requestUiIntent = Intent(ctx, MusicService::class.java).apply {
+                                action = MusicService.ACTION_REQUEST_UI_UPDATE
+                            }
+                            ctx.startService(requestUiIntent)
                         }
                     } else {
                         view?.let {
@@ -125,8 +129,18 @@ class SearchFragment : Fragment() {
             },
             onLongClick = { song ->
                 view?.let {
-                    MusicQueueManager.add(song)
-                    Snackbar.make(it, "Queue added", Snackbar.LENGTH_SHORT).show()
+                    val added = MusicQueueManager.add(song)
+                    if(added) {
+                        Snackbar.make(it, "Queue added", Snackbar.LENGTH_SHORT).show()
+                        context?.let { ctx ->
+                            val requestUiIntent = Intent(ctx, MusicService::class.java).apply {
+                                action = MusicService.ACTION_REQUEST_UI_UPDATE
+                            }
+                            ctx.startService(requestUiIntent)
+                        }
+                    } else {
+                        Snackbar.make(it, "Already in queue", Snackbar.LENGTH_SHORT).show()
+                    }
                 }
             }
         )

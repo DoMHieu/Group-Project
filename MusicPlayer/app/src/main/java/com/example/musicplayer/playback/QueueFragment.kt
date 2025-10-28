@@ -11,7 +11,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,7 +18,6 @@ import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
 import com.example.musicplayer.home.SongAdapter
 import com.google.android.material.snackbar.Snackbar
-import android.widget.ImageButton
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class QueueFragment : BottomSheetDialogFragment() {
@@ -29,8 +27,12 @@ class QueueFragment : BottomSheetDialogFragment() {
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (::queueAdapter.isInitialized) {
-                queueAdapter.notifyDataSetChanged()
+            if (!::queueAdapter.isInitialized) return
+            val currentQueue = MusicQueueManager.getQueue()
+            if (queueAdapter.itemCount != currentQueue.size) {
+                queueAdapter.updateQueueList(currentQueue.toMutableList())
+            } else {
+                queueAdapter.updateCurrentSong()
             }
         }
     }
@@ -48,7 +50,7 @@ class QueueFragment : BottomSheetDialogFragment() {
         rvQueue = view.findViewById(R.id.queueRecyclerView)
         rvQueue.layoutManager = LinearLayoutManager(requireContext())
         queueAdapter = SongAdapter(
-            MusicQueueManager.getQueue(),
+            MusicQueueManager.getQueue().toMutableList(),
             onClick = { song ->
                 MusicQueueManager.getPlayableSong(song) { playable ->
                     if (playable != null) {
@@ -61,7 +63,6 @@ class QueueFragment : BottomSheetDialogFragment() {
                             cover = playable.cover ?: "",
                             coverXL = playable.coverXL ?: ""
                         )
-                        queueAdapter.notifyDataSetChanged()
                     } else {
                         Snackbar.make(
                             requireView(),
@@ -78,22 +79,27 @@ class QueueFragment : BottomSheetDialogFragment() {
         queueAdapter.notifyDataSetChanged()
 
         val itemTouchHelper =
-            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT) {
                 override fun onMove(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder,
                     target: RecyclerView.ViewHolder
-                ): Boolean = false
-
+                ): Boolean {
+                    val fromPosition = viewHolder.bindingAdapterPosition
+                    val toPosition = target.bindingAdapterPosition
+                    if(fromPosition == RecyclerView.NO_POSITION || toPosition == RecyclerView.NO_POSITION) {
+                        return false
+                    }
+                    queueAdapter.onItemMove(fromPosition, toPosition)
+                    return true
+                }
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                     val position = viewHolder.bindingAdapterPosition
                     if (position == RecyclerView.NO_POSITION) return
-
-                    val song = MusicQueueManager.getQueue()[position]
+                    val song = queueAdapter.getSongAt(position) ?: return
                     val isCurrent = (song == MusicQueueManager.getCurrent())
                     MusicQueueManager.remove(song)
                     queueAdapter.notifyItemRemoved(position)
-
                     if (isCurrent) {
                         val next = MusicQueueManager.getCurrent()
                         if (next != null) {
@@ -119,7 +125,13 @@ class QueueFragment : BottomSheetDialogFragment() {
                         }
                     }
                 }
-
+                override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                    super.clearView(recyclerView, viewHolder)
+                    val requestUiIntent = Intent(requireContext(), MusicService::class.java).apply {
+                        action = MusicService.ACTION_REQUEST_UI_UPDATE
+                    }
+                    requireContext().startService(requestUiIntent)
+                }
             })
         itemTouchHelper.attachToRecyclerView(rvQueue)
     }
@@ -139,6 +151,8 @@ class QueueFragment : BottomSheetDialogFragment() {
             )
         }
     }
+
+
 
     override fun onStop() {
         super.onStop()

@@ -158,14 +158,13 @@
                 android:layout_weight="1" />
 
             <androidx.appcompat.widget.AppCompatImageButton
-                android:id="@+id/playlist_play"
+                android:id="@+id/favourite"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
-
                 android:padding="16dp"
-                app:srcCompat="@drawable/playlist_play"
-                app:tint="?attr/colorOnSurfaceVariant" />
+                app:srcCompat="@drawable/favorite_24px"
+                app:tint="#B83730" />
 
         </LinearLayout>
     </LinearLayout>

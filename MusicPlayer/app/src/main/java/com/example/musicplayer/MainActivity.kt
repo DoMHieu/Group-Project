@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -23,17 +24,29 @@ import androidx.core.view.isVisible
 
 class MainActivity : AppCompatActivity() {
 
-    private val homeFragment = HomeFragment()
-    private val miniPlayerFragment = MiniPlayerFragment()
-    private val playerFragment = PlayerFragment()
-    private var activeFragment: Fragment = homeFragment
+    companion object {
+        private const val TAG_HOME = "home"
+        private const val TAG_MINI = "mini"
+        private const val TAG_PLAYER = "player"
+        private const val KEY_ACTIVE_TAG = "active_fragment_tag"
+        private const val LOG = "MainActivity"
+    }
+
+    private lateinit var homeFragment: HomeFragment
+    private lateinit var miniPlayerFragment: MiniPlayerFragment
+    private lateinit var playerFragment: PlayerFragment
+    private var activeFragment: Fragment? = null
+
     private lateinit var bottomNavigationView: BottomNavigationView
     private lateinit var miniPlayerContainer: View
+
     private val musicStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val currentSong = MusicQueueManager.getCurrent()
             val shouldBeVisible = (currentSong != null)
             val isVisible = (miniPlayerContainer.isVisible)
+
+            Log.d(LOG, "onReceive: currentSong=$currentSong shouldBeVisible=$shouldBeVisible isVisible=$isVisible")
 
             if (shouldBeVisible && !isVisible) {
                 miniPlayerContainer.visibility = View.VISIBLE
@@ -62,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         actionBar?.hide()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_main)
+
         val container = findViewById<View>(R.id.container)
         bottomNavigationView = findViewById(R.id.bottom_navigation)
         miniPlayerContainer = findViewById(R.id.mini_player_container)
@@ -80,13 +94,41 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        homeFragment = supportFragmentManager.findFragmentByTag(TAG_HOME) as? HomeFragment ?: HomeFragment()
+        miniPlayerFragment = supportFragmentManager.findFragmentByTag(TAG_MINI) as? MiniPlayerFragment ?: MiniPlayerFragment()
+        playerFragment = supportFragmentManager.findFragmentByTag(TAG_PLAYER) as? PlayerFragment ?: PlayerFragment()
+
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().apply {
-                add(R.id.container, homeFragment, "1")
-                add(R.id.mini_player_container, miniPlayerFragment)
-                add(R.id.full_screen_container, playerFragment, "player").hide(playerFragment)
+                add(R.id.container, homeFragment, TAG_HOME)
+                add(R.id.mini_player_container, miniPlayerFragment, TAG_MINI)
+                add(R.id.full_screen_container, playerFragment, TAG_PLAYER).hide(playerFragment)
             }.commit()
+            activeFragment = homeFragment
+        } else {
+            val activeTag = savedInstanceState.getString(KEY_ACTIVE_TAG, TAG_HOME)
+            activeFragment = supportFragmentManager.findFragmentByTag(activeTag) ?: homeFragment
+
+            supportFragmentManager.beginTransaction().apply {
+                if (!homeFragment.isAdded) add(R.id.container, homeFragment, TAG_HOME)
+                if (!miniPlayerFragment.isAdded) add(R.id.mini_player_container, miniPlayerFragment, TAG_MINI)
+                if (!playerFragment.isAdded) add(R.id.full_screen_container, playerFragment, TAG_PLAYER)
+
+                if (homeFragment.isAdded) {
+                    if (homeFragment == activeFragment) show(homeFragment) else hide(homeFragment)
+                }
+                if (playerFragment.isAdded) {
+                    if (playerFragment == activeFragment) show(playerFragment) else hide(playerFragment)
+                }
+                if (miniPlayerFragment.isAdded) {
+                    if (miniPlayerFragment == activeFragment) show(miniPlayerFragment) else {
+                    }
+                }
+            }.commitAllowingStateLoss()
         }
+
+        val currentSong = MusicQueueManager.getCurrent()
+        miniPlayerContainer.visibility = if (currentSong != null) View.VISIBLE else View.GONE
 
         bottomNavigationView.setOnItemSelectedListener { item ->
             if (supportFragmentManager.backStackEntryCount > 0) {
@@ -94,8 +136,12 @@ class MainActivity : AppCompatActivity() {
             }
             when (item.itemId) {
                 R.id.home -> {
-                    supportFragmentManager.beginTransaction().hide(activeFragment).show(homeFragment).commit()
-                    activeFragment = homeFragment
+                    val toShow = homeFragment
+                    val currentlyActive = activeFragment
+                    if (currentlyActive != toShow) {
+                        supportFragmentManager.beginTransaction().hide(currentlyActive ?: toShow).show(toShow).commit()
+                        activeFragment = toShow
+                    }
                     true
                 }
                 else -> false
@@ -106,11 +152,9 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (playerFragment.isVisible) {
                     playerFragment.dismissWithAnimation()
-                }
-                else if (supportFragmentManager.backStackEntryCount > 0) {
+                } else if (supportFragmentManager.backStackEntryCount > 0) {
                     supportFragmentManager.popBackStack()
-                }
-                else {
+                } else {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
@@ -141,17 +185,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString("active_fragment_tag", activeFragment.tag)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        val activeTag = savedInstanceState.getString("active_fragment_tag")
-        val fragmentToShow = supportFragmentManager.findFragmentByTag(activeTag) ?: homeFragment
-        if (fragmentToShow != homeFragment) {
-            supportFragmentManager.beginTransaction().hide(homeFragment).commit()
-        }
-        supportFragmentManager.beginTransaction().show(fragmentToShow).commit()
-        activeFragment = fragmentToShow
+        outState.putString(KEY_ACTIVE_TAG, activeFragment?.tag ?: TAG_HOME)
     }
 }

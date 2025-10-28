@@ -24,17 +24,26 @@ class MiniPlayerFragment : Fragment() {
     private lateinit var title: TextView
     private lateinit var artist: TextView
     private lateinit var playPause: ImageButton
+    private var currentSongTitle: String = ""
+    private var currentCoverUrl: String = ""
     private val musicReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            title.text = intent?.getStringExtra("title") ?: "Unknown"
-            artist.text = intent?.getStringExtra("artist") ?: "Unknown"
-            val coverUrl = intent?.getStringExtra("cover")
-            Glide.with(this@MiniPlayerFragment)
-                .load(coverUrl)
-                .placeholder(R.drawable.image_24px)
-                .error(R.drawable.image_24px)
-                .into(cover)
-
+            val newTitle = intent?.getStringExtra("title") ?: "Unknown"
+            val newArtist = intent?.getStringExtra("artist") ?: "Unknown"
+            val newCoverUrl = intent?.getStringExtra("cover") ?: ""
+            if (newTitle != currentSongTitle) {
+                currentSongTitle = newTitle
+                title.text = newTitle
+            }
+            artist.text = newArtist
+            if (newCoverUrl != currentCoverUrl) {
+                currentCoverUrl = newCoverUrl
+                Glide.with(this@MiniPlayerFragment)
+                    .load(newCoverUrl)
+                    .placeholder(R.drawable.image_24px)
+                    .error(R.drawable.image_24px)
+                    .into(cover)
+            }
             val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
             playPause.setImageResource(
                 if (isPlaying) R.drawable.pause_24px else R.drawable.play

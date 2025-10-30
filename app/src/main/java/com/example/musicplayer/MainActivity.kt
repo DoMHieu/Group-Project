@@ -121,8 +121,7 @@ class MainActivity : AppCompatActivity() {
                     if (playerFragment == activeFragment) show(playerFragment) else hide(playerFragment)
                 }
                 if (miniPlayerFragment.isAdded) {
-                    if (miniPlayerFragment == activeFragment) show(miniPlayerFragment) else {
-                    }
+                    if (miniPlayerFragment == activeFragment) show(miniPlayerFragment)
                 }
             }.commitAllowingStateLoss()
         }

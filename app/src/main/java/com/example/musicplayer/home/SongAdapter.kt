@@ -36,14 +36,7 @@ class SongAdapter(
                 playableSong?.let {
                     MusicQueueManager.add(it)
                     MusicQueueManager.setCurrentSong(it)
-                    MusicService.play(
-                        it.url,
-                        appContext,
-                        it.title,
-                        it.artist,
-                        it.cover ?: "",
-                        it.coverXL ?: ""
-                    )
+                    MusicService.play(it.url,appContext,it.title,it.artist,it.cover ?: "",it.coverXL ?: "")
                     val uiUpdateIntent = Intent("MUSIC_PROGRESS_UPDATE").apply {
                         setPackage(appContext.packageName)
                         putExtra("title", it.title)

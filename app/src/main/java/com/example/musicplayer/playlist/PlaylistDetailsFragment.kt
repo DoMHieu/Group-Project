@@ -178,7 +178,7 @@ class PlaylistDetailsFragment : Fragment() {
                 MusicQueueManager.setCurrentSong(firstSong)
                 MusicQueueManager.getPlayableSong(firstSong) { playableSong ->
                     if (!isAdded || playableSong == null) return@getPlayableSong
-                    MusicService.play(playableSong.url, context)
+                    MusicService.play(playableSong.url, context,playableSong.title, playableSong.artist,playableSong.cover?:"",playableSong.coverXL?:"")
                     val uiUpdateIntent = Intent("MUSIC_PROGRESS_UPDATE").apply {
                         setPackage(context.packageName)
                         putExtra("title", playableSong.title)

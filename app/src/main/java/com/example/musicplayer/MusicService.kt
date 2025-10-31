@@ -161,7 +161,7 @@ class MusicService : Service() {
                     currentArtist = intent.getStringExtra("ARTIST") ?: ""
                     currentCover = intent.getStringExtra("COVER") ?: ""
                     coverXL = intent.getStringExtra("COVER_XL") ?: ""
-
+                    this.coverXL = coverXL
                     if (::notificationManager.isInitialized) {
                         notificationManager.loadCoverArt(coverXL)
                     }
@@ -199,7 +199,6 @@ class MusicService : Service() {
                         }
                     }
                 }
-
                 "STOP" -> stopSelf()
             }
         }

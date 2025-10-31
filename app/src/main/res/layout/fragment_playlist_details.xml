@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".playlist.PlaylistFragment">
+    tools:context=".playlist.PlaylistDetailsFragment">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -13,28 +13,29 @@
         android:fitsSystemWindows="true">
 
         <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+            android:id="@+id/toolbar_details"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Playlists" />
+            app:navigationIcon="@drawable/back_button"
+            tools:title="Tên Playlist" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/playlist_recycler_view"
+        android:id="@+id/songs_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:listitem="@layout/item_playlist" />
-
+        tools:listitem="@layout/item_song" />
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_playlist"
+        android:id="@+id/playlist_play"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Create new playlist"
-        app:srcCompat="@drawable/add_2_24px" />
+        android:src="@drawable/play"
+        app:layout_anchor="@id/songs_recycler_view"
+        app:layout_anchorGravity="bottom|end" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

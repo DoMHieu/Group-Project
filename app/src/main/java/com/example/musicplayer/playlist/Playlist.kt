@@ -1,7 +1,12 @@
 package com.example.musicplayer.playlist
 
-import androidx.fragment.app.Fragment
-
-class Playlist: Fragment() {
-
+data class Playlist(
+    val id: Long,
+    val name: String,
+    val songCount: Int,
+    val coverUrl: String?
+) {
+    companion object {
+        const val FAVOURITES_PLAYLIST_ID = -1L
+    }
 }

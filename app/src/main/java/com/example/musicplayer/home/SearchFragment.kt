@@ -15,7 +15,7 @@ import retrofit2.Response
 import android.text.Editable
 import android.text.TextWatcher
 import com.example.musicplayer.playback.MusicQueueManager
-import com.example.musicplayer.MusicService
+import android.content.BroadcastReceiver
 import com.example.musicplayer.R
 import com.example.musicplayer.api.RetrofitClient
 import com.example.musicplayer.api.SoundCloudResponseItem
@@ -25,6 +25,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.content.IntentFilter
+import android.os.Build
+import androidx.core.content.ContextCompat
+
 
 class SearchFragment : Fragment() {
     private lateinit var searchInput: EditText
@@ -40,6 +44,13 @@ class SearchFragment : Fragment() {
     private var searchRunnable: Runnable? = null
     private var currentSearchCall: Call<List<SoundCloudResponseItem>>? = null
 
+    private val musicReceiver = object : BroadcastReceiver() {
+        @SuppressLint("NotifyDataSetChanged")
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!::adapter.isInitialized) return
+            adapter.updateCurrentSong()
+        }
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -47,6 +58,7 @@ class SearchFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        @SuppressLint("UnspecifiedRegisterReceiverFlag")
         searchInput = view.findViewById(R.id.searchInput)
         recyclerView = view.findViewById(R.id.recyclerView)
         suggestionsRecyclerView = view.findViewById(R.id.suggestionsRecyclerView)
@@ -101,46 +113,12 @@ class SearchFragment : Fragment() {
         adapter = SongAdapter(
             songs,
             onClick = { song ->
-                MusicQueueManager.getPlayableSong(song) { playable ->
-                    if (!isAdded) return@getPlayableSong
-                    if (playable != null) {
-                        MusicQueueManager.add(playable)
-                        MusicQueueManager.setCurrentSong(playable)
-                        context?.let { ctx ->
-                            MusicService.play(
-                                playable.url,
-                                ctx,
-                                title = playable.title,
-                                artist = playable.artist,
-                                cover = playable.cover ?: "",
-                                coverXL = playable.coverXL ?: ""
-                            )
-                            val requestUiIntent = Intent(ctx, MusicService::class.java).apply {
-                                action = MusicService.ACTION_REQUEST_UI_UPDATE
-                            }
-                            ctx.startService(requestUiIntent)
-                        }
-                    } else {
-                        view?.let {
-                            Snackbar.make(it, "Can't play this song", Snackbar.LENGTH_LONG).show()
-                        }
-                    }
-                }
+                SongAdapter.playSong(requireContext(), song)
             },
             onLongClick = { song ->
+                MusicQueueManager.add(song)
                 view?.let {
-                    val added = MusicQueueManager.add(song)
-                    if(added) {
-                        Snackbar.make(it, "Queue added", Snackbar.LENGTH_SHORT).show()
-                        context?.let { ctx ->
-                            val requestUiIntent = Intent(ctx, MusicService::class.java).apply {
-                                action = MusicService.ACTION_REQUEST_UI_UPDATE
-                            }
-                            ctx.startService(requestUiIntent)
-                        }
-                    } else {
-                        Snackbar.make(it, "Already in queue", Snackbar.LENGTH_SHORT).show()
-                    }
+                    Snackbar.make(it, "Đã thêm vào hàng đợi", Snackbar.LENGTH_SHORT).show()
                 }
             }
         )
@@ -161,6 +139,7 @@ class SearchFragment : Fragment() {
         suggestionsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         suggestionsRecyclerView.adapter = suggestionsAdapter
     }
+
     private fun showSuggestions(show: Boolean) {
         suggestionsRecyclerView.visibility = if (show) View.VISIBLE else View.GONE
         recyclerView.visibility = if (show) View.GONE else View.VISIBLE
@@ -170,6 +149,7 @@ class SearchFragment : Fragment() {
         val imm = context?.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
         imm?.hideSoftInputFromWindow(view?.windowToken, 0)
     }
+
     private fun searchSongs(keyword: String) {
         currentSearchCall?.cancel()
         currentSearchCall = RetrofitClient.api.searchTrack(keyword)
@@ -216,4 +196,26 @@ class SearchFragment : Fragment() {
             }
         })
     }
+
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter("MUSIC_PROGRESS_UPDATE")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requireContext().registerReceiver(musicReceiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                musicReceiver,
+                filter,
+                null,
+                null,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
+    }
+    override fun onStop() {
+        super.onStop()
+        requireContext().unregisterReceiver(musicReceiver)
+    }
+
 }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    kotlin("kapt")
 }
 
 android {
@@ -25,6 +26,9 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    buildFeatures {
+        viewBinding = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -56,4 +60,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.9.4")
     implementation("com.github.bumptech.glide:glide:5.0.5")
     implementation("androidx.media:media:1.7.1")
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("androidx.room:room-runtime:2.8.3")
+    kapt("androidx.room:room-compiler:2.8.3")
+    implementation("androidx.room:room-ktx:2.8.3")
 }

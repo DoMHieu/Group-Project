@@ -86,4 +86,13 @@ object MusicQueueManager {
         queue.add(toPosition, item)
         currentSongBeforeMove?.let{currentIndex = queue.indexOf(it)}
     }
+    fun shuffle() {
+        val songToKeep = currentSong ?: return
+        val otherSongs = queue.filter { it.id != songToKeep.id }.toMutableList()
+        otherSongs.shuffle()
+        queue.clear()
+        queue.add(songToKeep)
+        queue.addAll(otherSongs)
+        currentIndex = 0
+    }
 }

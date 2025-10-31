@@ -33,8 +33,12 @@ import androidx.core.animation.doOnEnd
 import android.widget.ImageButton
 import android.widget.RelativeLayout
 import android.view.VelocityTracker
+import com.example.musicplayer.home.Song
+import com.example.musicplayer.playlist.FavoriteList
 
 class PlayerFragment : Fragment() {
+    private lateinit var favourite: AppCompatImageButton
+    private var currentSong: Song? = null
     private var velocityTracker: VelocityTracker? = null
     private lateinit var slider: SeekBar
     private lateinit var textCurrentTime: TextView
@@ -54,27 +58,37 @@ class PlayerFragment : Fragment() {
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
-            val newTitle = intent?.getStringExtra("title") ?: ""
-            val newArtist = intent?.getStringExtra("artist") ?: ""
-            val newCoverUrlXL = intent?.getStringExtra("cover_xl") ?: ""
-            if (newTitle.isNotEmpty() && newTitle != currentSongTitle) {
-                currentSongTitle = newTitle
-                toolbarTitle.text = newTitle
-                toolbarSubtitle.text = newArtist
-                if (newCoverUrlXL.isNotBlank()) {
-                    Glide.with(requireContext())
-                        .load(newCoverUrlXL)
-                        .apply(
-                            RequestOptions.bitmapTransform(
-                                MultiTransformation(CenterCrop(), RoundedCorners(24))
+            val newSong = MusicQueueManager.getCurrent()
+            if (newSong?.id != currentSong?.id) {
+                currentSong = newSong
+                if (newSong != null) {
+                    currentSongTitle = newSong.title
+                    toolbarTitle.text = newSong.title
+                    toolbarSubtitle.text = newSong.artist
+                    val newCoverUrlXL = newSong.coverXL ?: ""
+                    if (newCoverUrlXL.isNotBlank()) {
+                        Glide.with(requireContext())
+                            .load(newCoverUrlXL)
+                            .apply(
+                                RequestOptions.bitmapTransform(
+                                    MultiTransformation(CenterCrop(), RoundedCorners(24))
+                                )
+                                    .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                                    .placeholder(R.drawable.image_24px)
+                                    .error(R.drawable.image_24px)
                             )
-                                .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
-                                .placeholder(R.drawable.image_24px)
-                                .error(R.drawable.image_24px)
-                        )
-                        .into(coverImage)
+                            .into(coverImage)
+                    } else {
+                        coverImage.setImageResource(R.drawable.image_24px)
+                    }
+                    updateFavouriteButtonIcon(FavoriteList.isFavourite(newSong.id))
+
                 } else {
+                    currentSongTitle = ""
+                    toolbarTitle.text = ""
+                    toolbarSubtitle.text = ""
                     coverImage.setImageResource(R.drawable.image_24px)
+                    updateFavouriteButtonIcon(false)
                 }
             }
             updateUpNextText()
@@ -87,6 +101,15 @@ class PlayerFragment : Fragment() {
             repeatButton.setImageResource(
                 if (isRepeating) R.drawable.repeat_one_24px else R.drawable.repeat
             )
+        }
+    }
+    private val favouriteReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val songId = intent?.getLongExtra("songId", -1L) ?: -1L
+            if (songId == currentSong?.id) {
+                val isFavourite = intent?.getBooleanExtra("isFavourite", false) ?: false
+                updateFavouriteButtonIcon(isFavourite)
+            }
         }
     }
     private val seekbarReceiver = object : BroadcastReceiver() {
@@ -114,6 +137,7 @@ class PlayerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         upNextText = view.findViewById(R.id.text_up_next)
+        favourite = view.findViewById(R.id.favourite)
         sleepTimerButton = view.findViewById(R.id.button_sleep_timer)
         playNext = view.findViewById(R.id.up_next_bar);updateUpNextText()
         slider = view.findViewById(R.id.seekBar)
@@ -136,7 +160,6 @@ class PlayerFragment : Fragment() {
                 if (fromUser) { textCurrentTime.text = formatTime(progress.toLong()) }
             }
         })
-
         val nextButton = view.findViewById<ImageView>(R.id.nextButton)
         val previousButton = view.findViewById<ImageView>(R.id.prevButton)
         nextButton.setOnClickListener {
@@ -179,17 +202,8 @@ class PlayerFragment : Fragment() {
             val queueFragment = QueueFragment()
             queueFragment.show(parentFragmentManager, "QueueFragmentTag")
         }
-        val favourite = view.findViewById<AppCompatImageButton>(R.id.favourite)
         favourite.setOnClickListener {
-            Snackbar.make(requireView(), "Not functionable right now, hold to delete queue", Snackbar.LENGTH_SHORT).show()
-        }
-        favourite.setOnLongClickListener {
-            val intent = Intent(requireContext(), MusicService::class.java).apply {
-                action = "CLEAR_QUEUE"
-            }
-            requireContext().startForegroundService(intent)
-            Snackbar.make(requireView(), "Queue deleted", Snackbar.LENGTH_SHORT).show()
-            true
+            onFavouriteClicked()
         }
         val fullscreen = view.findViewById<RelativeLayout>(R.id.relativelayout)
         fullscreen.setOnTouchListener { v, event ->
@@ -301,12 +315,24 @@ class PlayerFragment : Fragment() {
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
         }
+        val favouriteFilter = IntentFilter(FavoriteList.ACTION_FAVOURITE_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requireContext().registerReceiver(favouriteReceiver, favouriteFilter, Context.RECEIVER_EXPORTED)
+        } else {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                favouriteReceiver,
+                favouriteFilter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
     }
 
     override fun onStop() {
         super.onStop()
         requireContext().unregisterReceiver(musicReceiver)
         requireContext().unregisterReceiver(seekbarReceiver)
+        requireContext().unregisterReceiver(favouriteReceiver)
     }
 
     private fun sendMusicCommand(action: String, seekTo: Long? = null) {
@@ -369,6 +395,23 @@ class PlayerFragment : Fragment() {
             upNextText.text = getString(R.string.up_next_format, nextSong.title)
         } else {
             upNextText.text = "Empty Queue"
+        }
+    }
+    private fun onFavouriteClicked() {
+        currentSong?.let { song ->
+            val isNowFavourite = FavoriteList.toggleFavourite(song, requireContext())
+            updateFavouriteButtonIcon(isNowFavourite)
+        } ?: run {
+            Snackbar.make(requireView(), "Không có bài hát nào để yêu thích", Snackbar.LENGTH_SHORT).show()
+        }
+    }
+    private fun updateFavouriteButtonIcon(isFavourite: Boolean) {
+        if (!::favourite.isInitialized) return
+
+        if (isFavourite) {
+            favourite.setImageResource(R.drawable.favorite_checked)
+        } else {
+            favourite.setImageResource(R.drawable.favorite_24px)
         }
     }
 

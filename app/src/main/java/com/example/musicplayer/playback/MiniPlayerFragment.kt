@@ -1,5 +1,6 @@
 package com.example.musicplayer.playback
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,8 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
+// (Đảm bảo bạn đã import MusicQueueManager)
+import com.example.musicplayer.playback.MusicQueueManager
 
 class MiniPlayerFragment : Fragment() {
 
@@ -24,26 +27,34 @@ class MiniPlayerFragment : Fragment() {
     private lateinit var title: TextView
     private lateinit var artist: TextView
     private lateinit var playPause: ImageButton
-    private var currentSongTitle: String = ""
-    private var currentCoverUrl: String = ""
+
+    // === XÓA BIẾN CACHE 'currentSongTitle' VÀ 'currentCoverUrl' ===
+
     private val musicReceiver = object : BroadcastReceiver() {
+        @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
-            val newTitle = intent?.getStringExtra("title") ?: "Unknown"
-            val newArtist = intent?.getStringExtra("artist") ?: "Unknown"
-            val newCoverUrl = intent?.getStringExtra("cover") ?: ""
-            if (newTitle != currentSongTitle) {
-                currentSongTitle = newTitle
-                title.text = newTitle
-            }
-            artist.text = newArtist
-            if (newCoverUrl != currentCoverUrl) {
-                currentCoverUrl = newCoverUrl
+
+            // === SỬA LỖI: DÙNG LOGIC PULL (KÉO) TỪ MANAGER ===
+            // (Giống hệt PlayerFragment)
+            val currentSong = MusicQueueManager.getCurrent()
+
+            if (currentSong != null) {
+                title.text = currentSong.title
+                artist.text = currentSong.artist
                 Glide.with(this@MiniPlayerFragment)
-                    .load(newCoverUrl)
-                    .placeholder(R.drawable.image_24px)
-                    .error(R.drawable.image_24px)
+                    .load(currentSong.cover) // Dùng cover nhỏ
+                    .placeholder(R.drawable.ic_default_cover)
+                    .error(R.drawable.ic_default_cover)
                     .into(cover)
+            } else {
+                // Xử lý khi queue trống
+                title.text = "Unknown"
+                artist.text = "Unknown"
+                Glide.with(this@MiniPlayerFragment).clear(cover)
             }
+
+            // (Code cũ, vẫn đúng)
+            // Chúng ta vẫn tin 'isPlaying' từ intent, vì nó là trạng thái động
             val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
             playPause.setImageResource(
                 if (isPlaying) R.drawable.pause_24px else R.drawable.play
@@ -60,15 +71,17 @@ class MiniPlayerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         cover = view.findViewById(R.id.mini_player_cover)
         title = view.findViewById(R.id.mini_player_title)
         artist = view.findViewById(R.id.mini_player_artist)
         playPause = view.findViewById(R.id.mini_player_play_pause)
+
         playPause.setOnClickListener {
             val intent = Intent(requireContext(), MusicService::class.java).apply {
                 action = "TOGGLE_PLAY"
             }
-            requireContext().startForegroundService(intent)
+            requireContext().startService(intent)
         }
 
         view.setOnClickListener {
@@ -79,19 +92,29 @@ class MiniPlayerFragment : Fragment() {
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
         val filter = IntentFilter("MUSIC_PROGRESS_UPDATE")
+
+        // Đồng nhất với PlayerFragment: trên Android 13+ dùng RECEIVER_EXPORTED, phiên bản cũ dùng ContextCompat.registerReceiver
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requireContext().registerReceiver(musicReceiver, filter, Context.RECEIVER_EXPORTED)
+            requireContext().registerReceiver(
+                musicReceiver,
+                filter,
+                Context.RECEIVER_EXPORTED
+            )
         } else {
             ContextCompat.registerReceiver(
                 requireContext(),
                 musicReceiver,
                 filter,
-                ContextCompat.RECEIVER_NOT_EXPORTED
+                null, // permission
+                null, // handler
+                ContextCompat.RECEIVER_NOT_EXPORTED // flags
             )
         }
+
         val requestUiIntent = Intent(requireContext(), MusicService::class.java).apply {
             action = MusicService.ACTION_REQUEST_UI_UPDATE
         }

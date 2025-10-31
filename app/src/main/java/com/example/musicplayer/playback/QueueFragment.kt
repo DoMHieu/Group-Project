@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -17,18 +19,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
 import com.example.musicplayer.home.SongAdapter
-import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-
 class QueueFragment : BottomSheetDialogFragment() {
-
+    private lateinit var tvQueueSongCount: TextView
+    private lateinit var btnQueueShuffle: ImageButton
     private lateinit var rvQueue: RecyclerView
     private lateinit var queueAdapter: SongAdapter
     private val musicReceiver = object : BroadcastReceiver() {
-        @SuppressLint("NotifyDataSetChanged")
+        @SuppressLint("NotifyDataSetChanged", "SetTextI18n")
         override fun onReceive(context: Context?, intent: Intent?) {
             if (!::queueAdapter.isInitialized) return
             val currentQueue = MusicQueueManager.getQueue()
+            tvQueueSongCount.text = "${currentQueue.size} songs"
             if (queueAdapter.itemCount != currentQueue.size) {
                 queueAdapter.updateQueueList(currentQueue.toMutableList())
             } else {
@@ -44,39 +46,31 @@ class QueueFragment : BottomSheetDialogFragment() {
         return inflater.inflate(R.layout.fragment_queue, container, false)
     }
 
-    @SuppressLint("NotifyDataSetChanged")
+    @SuppressLint("NotifyDataSetChanged", "SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        btnQueueShuffle = view.findViewById(R.id.btnQueueShuffle)
+        tvQueueSongCount = view.findViewById(R.id.tvQueueSongCount)
+        val currentQueue = MusicQueueManager.getQueue()
+        tvQueueSongCount.text = "${currentQueue.size} songs"
         rvQueue = view.findViewById(R.id.queueRecyclerView)
         rvQueue.layoutManager = LinearLayoutManager(requireContext())
         queueAdapter = SongAdapter(
             MusicQueueManager.getQueue().toMutableList(),
             onClick = { song ->
-                MusicQueueManager.getPlayableSong(song) { playable ->
-                    if (playable != null) {
-                        MusicQueueManager.setCurrentSong(playable)
-                        MusicService.play(
-                            playable.url,
-                            requireContext(),
-                            title = playable.title,
-                            artist = playable.artist,
-                            cover = playable.cover ?: "",
-                            coverXL = playable.coverXL ?: ""
-                        )
-                    } else {
-                        Snackbar.make(
-                            requireView(),
-                            "Invalid song, try delete from queue and retry!",
-                            Snackbar.LENGTH_LONG
-                        ).show()
-                    }
-                }
+                SongAdapter.playSong(requireContext(), song)
             },
             onLongClick = {
             }
         )
         rvQueue.adapter = queueAdapter
         queueAdapter.notifyDataSetChanged()
+        btnQueueShuffle.setOnClickListener {
+            MusicQueueManager.shuffle()
+            val newQueue = MusicQueueManager.getQueue()
+            queueAdapter.updateQueueList(newQueue.toMutableList())
+            rvQueue.scrollToPosition(0)
+        }
 
         val itemTouchHelper =
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT) {
@@ -98,32 +92,13 @@ class QueueFragment : BottomSheetDialogFragment() {
                     if (position == RecyclerView.NO_POSITION) return
                     val song = queueAdapter.getSongAt(position) ?: return
                     val isCurrent = (song == MusicQueueManager.getCurrent())
+                    if (isCurrent) {
+                        queueAdapter.notifyItemChanged(position)
+                        return
+                    }
+                    tvQueueSongCount.text = "${MusicQueueManager.getQueue().size} songs"
                     MusicQueueManager.remove(song)
                     queueAdapter.notifyItemRemoved(position)
-                    if (isCurrent) {
-                        val next = MusicQueueManager.getCurrent()
-                        if (next != null) {
-                            MusicQueueManager.getPlayableSong(next) { playable ->
-                                if (playable != null) {
-                                    MusicService.play(
-                                        playable.url,
-                                        requireContext(),
-                                        title = playable.title,
-                                        artist = playable.artist,
-                                        cover = playable.cover ?: "",
-                                        coverXL = playable.coverXL ?: "",
-                                    )
-                                } else
-                                    Snackbar.make(
-                                        requireView(),
-                                        "Không thể phát bài kế tiếp",
-                                        Snackbar.LENGTH_LONG
-                                    ).show()
-                            }
-                        } else {
-                            MusicService.next(requireContext())
-                        }
-                    }
                 }
                 override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                     super.clearView(recyclerView, viewHolder)
@@ -135,7 +110,6 @@ class QueueFragment : BottomSheetDialogFragment() {
             })
         itemTouchHelper.attachToRecyclerView(rvQueue)
     }
-
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
@@ -151,9 +125,6 @@ class QueueFragment : BottomSheetDialogFragment() {
             )
         }
     }
-
-
-
     override fun onStop() {
         super.onStop()
         requireContext().unregisterReceiver(musicReceiver)

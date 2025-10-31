@@ -16,6 +16,9 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.example.musicplayer.playback.MusicQueueManager
 import com.example.musicplayer.R
+import com.example.musicplayer.MusicService
+import android.content.Context
+import android.content.Intent
 
 class SongAdapter(
     private val items: MutableList<Song>,
@@ -24,6 +27,36 @@ class SongAdapter(
 ) : RecyclerView.Adapter<SongAdapter.SongViewHolder>() {
 
     private var currentSongId: Long? = MusicQueueManager.getCurrent()?.id
+    companion object {
+
+        fun playSong(context: Context, song: Song) {
+            MusicQueueManager.getPlayableSong(song) { playableSong ->
+                val appContext = context.applicationContext ?: return@getPlayableSong
+
+                playableSong?.let {
+                    MusicQueueManager.add(it)
+                    MusicQueueManager.setCurrentSong(it)
+                    MusicService.play(
+                        it.url,
+                        appContext,
+                        it.title,
+                        it.artist,
+                        it.cover ?: "",
+                        it.coverXL ?: ""
+                    )
+                    val uiUpdateIntent = Intent("MUSIC_PROGRESS_UPDATE").apply {
+                        setPackage(appContext.packageName)
+                        putExtra("title", it.title)
+                        putExtra("artist", it.artist)
+                        putExtra("cover", it.cover)
+                        putExtra("cover_xl", it.coverXL)
+                        putExtra("isPlaying", true)
+                    }
+                    appContext.sendBroadcast(uiUpdateIntent)
+                }
+            }
+        }
+    }
 
     inner class SongViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.songTitle)
@@ -80,14 +113,6 @@ class SongAdapter(
         notifyItemMoved(fromPosition, toPosition)
         MusicQueueManager.moveSongInQueue(fromPosition, toPosition)
     }
-
-    fun removeItemAt(position: Int) {
-        if (position >= 0 && position < items.size) {
-            items.removeAt(position)
-            notifyItemRemoved(position)
-        }
-    }
-
     fun getSongAt(position: Int): Song? {
         if (position >= 0 && position < items.size) {
             return items[position]

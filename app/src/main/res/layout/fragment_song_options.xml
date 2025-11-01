@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?attr/colorSurfaceContainerHigh"
+    tools:context=".playback.SongOptionsFragment">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bottom_drag_handle" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="16dp">
+
+        <ImageView
+            android:id="@+id/option_song_cover"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:scaleType="centerCrop"
+            tools:src="@drawable/ic_default_cover" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+            <TextView
+                android:id="@+id/option_song_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Tên bài hát rất dài" />
+
+            <TextView
+                android:id="@+id/option_song_artist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Artist" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/option_btn_favourite"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/favorite_24px"
+            android:contentDescription="Favourite" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="24dp">
+
+        <TextView
+            android:id="@+id/option_btn_enqueue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:drawablePadding="16dp"
+            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:background="?attr/selectableItemBackground"
+            app:drawableStartCompat="@drawable/playlist_play"
+            tools:text="Enqueue" />
+
+        <TextView
+            android:id="@+id/optionBtnAddPlaylist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:drawablePadding="16dp"
+            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:background="?attr/selectableItemBackground"
+            app:drawableStartCompat="@drawable/playlist_add_24px"
+            android:text="Add to playlist" />
+
+    </LinearLayout>
+
+</LinearLayout>

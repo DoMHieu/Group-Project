@@ -8,4 +8,4 @@ data class Song(
     val cover: String? = "",
     val coverXL: String? = "",
     var lastFetchTime: Long = 0
-)
+):java.io.Serializable

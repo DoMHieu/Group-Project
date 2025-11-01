@@ -20,6 +20,7 @@ import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
 import com.example.musicplayer.home.SongAdapter
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+
 class QueueFragment : BottomSheetDialogFragment() {
     private lateinit var tvQueueSongCount: TextView
     private lateinit var btnQueueShuffle: ImageButton
@@ -35,6 +36,10 @@ class QueueFragment : BottomSheetDialogFragment() {
                 queueAdapter.updateQueueList(currentQueue.toMutableList())
             } else {
                 queueAdapter.updateCurrentSong()
+            }
+            if (intent?.action == "MUSIC_PROGRESS_UPDATE") {
+                val isPlaying = intent.getBooleanExtra("isPlaying", false)
+                queueAdapter.updatePlaybackState(isPlaying)
             }
         }
     }
@@ -55,25 +60,10 @@ class QueueFragment : BottomSheetDialogFragment() {
         tvQueueSongCount.text = "${currentQueue.size} songs"
         rvQueue = view.findViewById(R.id.queueRecyclerView)
         rvQueue.layoutManager = LinearLayoutManager(requireContext())
-        queueAdapter = SongAdapter(
-            MusicQueueManager.getQueue().toMutableList(),
-            onClick = { song ->
-                SongAdapter.playSong(requireContext(), song)
-            },
-            onLongClick = {
-            }
-        )
-        rvQueue.adapter = queueAdapter
-        queueAdapter.notifyDataSetChanged()
-        btnQueueShuffle.setOnClickListener {
-            MusicQueueManager.shuffle()
-            val newQueue = MusicQueueManager.getQueue()
-            queueAdapter.updateQueueList(newQueue.toMutableList())
-            rvQueue.scrollToPosition(0)
-        }
 
         val itemTouchHelper =
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT) {
+                override fun isLongPressDragEnabled(): Boolean = false
                 override fun onMove(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder,
@@ -96,18 +86,50 @@ class QueueFragment : BottomSheetDialogFragment() {
                         queueAdapter.notifyItemChanged(position)
                         return
                     }
-                    tvQueueSongCount.text = "${MusicQueueManager.getQueue().size} songs"
                     MusicQueueManager.remove(song)
                     queueAdapter.notifyItemRemoved(position)
+                    tvQueueSongCount.text = "${MusicQueueManager.getQueue().size} songs"
                 }
                 override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                     super.clearView(recyclerView, viewHolder)
-                    val requestUiIntent = Intent(requireContext(), MusicService::class.java).apply {
-                        action = MusicService.ACTION_REQUEST_UI_UPDATE
+                    context?.let { safeContext ->
+                        val requestUiIntent = Intent(safeContext, MusicService::class.java).apply {
+                            action = MusicService.ACTION_REQUEST_UI_UPDATE
+                        }
+                        safeContext.startService(requestUiIntent)
                     }
-                    requireContext().startService(requestUiIntent)
                 }
             })
+
+        queueAdapter = SongAdapter(
+            MusicQueueManager.getQueue().toMutableList(),
+            onClick = { song ->
+                val currentSong = MusicQueueManager.getCurrent()
+                if (currentSong != null && song.id == currentSong.id) {
+                    val toggleIntent = Intent(requireContext(), MusicService::class.java).apply {
+                        action = "TOGGLE_PLAY"
+                    }
+                    requireContext().startService(toggleIntent)
+                } else {
+                    SongAdapter.playSong(requireContext(), song)
+                }
+            },
+            isQueueAdapter = true,
+            onDragStart = { viewHolder ->
+                itemTouchHelper.startDrag(viewHolder)
+            }
+        )
+        rvQueue.adapter = queueAdapter
+        queueAdapter.notifyDataSetChanged()
+
+        btnQueueShuffle.setOnClickListener {
+            MusicQueueManager.shuffle()
+            val newQueue = MusicQueueManager.getQueue()
+            queueAdapter.updateQueueList(newQueue.toMutableList())
+            rvQueue.scrollToPosition(0)
+            tvQueueSongCount.text = "${newQueue.size} songs"
+        }
+
         itemTouchHelper.attachToRecyclerView(rvQueue)
     }
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -121,6 +143,8 @@ class QueueFragment : BottomSheetDialogFragment() {
                 requireContext(),
                 musicReceiver,
                 filter,
+                null,
+                null,
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
         }

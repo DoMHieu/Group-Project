@@ -15,20 +15,14 @@ import retrofit2.Response
 import android.text.Editable
 import android.text.TextWatcher
 import com.example.musicplayer.playback.MusicQueueManager
-import android.content.BroadcastReceiver
 import com.example.musicplayer.R
 import com.example.musicplayer.api.RetrofitClient
 import com.example.musicplayer.api.SoundCloudResponseItem
 import com.google.android.material.snackbar.Snackbar
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import android.os.Looper
-import android.content.IntentFilter
-import android.os.Build
-import androidx.core.content.ContextCompat
-
 
 class SearchFragment : Fragment() {
     private lateinit var searchInput: EditText
@@ -43,14 +37,6 @@ class SearchFragment : Fragment() {
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
     private var currentSearchCall: Call<List<SoundCloudResponseItem>>? = null
-
-    private val musicReceiver = object : BroadcastReceiver() {
-        @SuppressLint("NotifyDataSetChanged")
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (!::adapter.isInitialized) return
-            adapter.updateCurrentSong()
-        }
-    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -114,12 +100,6 @@ class SearchFragment : Fragment() {
             songs,
             onClick = { song ->
                 SongAdapter.playSong(requireContext(), song)
-            },
-            onLongClick = { song ->
-                MusicQueueManager.add(song)
-                view?.let {
-                    Snackbar.make(it, "Đã thêm vào hàng đợi", Snackbar.LENGTH_SHORT).show()
-                }
             }
         )
 
@@ -196,26 +176,4 @@ class SearchFragment : Fragment() {
             }
         })
     }
-
-    override fun onStart() {
-        super.onStart()
-        val filter = IntentFilter("MUSIC_PROGRESS_UPDATE")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requireContext().registerReceiver(musicReceiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            ContextCompat.registerReceiver(
-                requireContext(),
-                musicReceiver,
-                filter,
-                null,
-                null,
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
-        }
-    }
-    override fun onStop() {
-        super.onStop()
-        requireContext().unregisterReceiver(musicReceiver)
-    }
-
 }

@@ -134,12 +134,10 @@ class PlaylistFragment : Fragment() {
     private fun showCreatePlaylistDialog() {
         val context = requireContext()
         val editText = TextInputEditText(context)
-        editText.hint = "Tên playlist"
-
         MaterialAlertDialogBuilder(context)
-            .setTitle("Tạo playlist mới")
+            .setTitle("Create new playlist")
             .setView(editText)
-            .setPositiveButton("Tạo") { dialog, _ ->
+            .setPositiveButton("Create") { dialog, _ ->
                 val name = editText.text.toString().trim()
                 if (name.isBlank()) {
                     Snackbar.make(binding.root, "Invalid name", Snackbar.LENGTH_SHORT).show()
@@ -158,7 +156,7 @@ class PlaylistFragment : Fragment() {
                     }
                 }
             }
-            .setNegativeButton("Hủy", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 

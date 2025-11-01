@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
-import com.example.musicplayer.R
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,8 +18,6 @@ import com.example.musicplayer.databinding.FragmentPlaylistDetailsBinding
 import com.example.musicplayer.home.Song
 import com.example.musicplayer.home.SongAdapter
 import com.example.musicplayer.playback.MusicQueueManager
-import com.google.android.material.snackbar.Snackbar
-
 class PlaylistDetailsFragment : Fragment() {
 
     private var _binding: FragmentPlaylistDetailsBinding? = null
@@ -39,14 +36,6 @@ class PlaylistDetailsFragment : Fragment() {
             }
         }
     }
-    private val musicReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (::songAdapter.isInitialized) {
-                songAdapter.updateCurrentSong()
-            }
-        }
-    }
-
     companion object {
         private const val ARG_PLAYLIST_ID = "playlist_id"
         private const val ARG_PLAYLIST_NAME = "playlist_name"
@@ -102,26 +91,13 @@ class PlaylistDetailsFragment : Fragment() {
                 )
             }
         }
-        val musicFilter = IntentFilter("MUSIC_PROGRESS_UPDATE")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requireContext().registerReceiver(musicReceiver, musicFilter, Context.RECEIVER_EXPORTED)
-        } else {
-            ContextCompat.registerReceiver(
-                requireContext(),
-                musicReceiver,
-                musicFilter,
-                null,
-                null,
-                ContextCompat.RECEIVER_NOT_EXPORTED
-            )
-        }
+
     }
     override fun onStop() {
         super.onStop()
         if (playlistId == Playlist.FAVOURITES_PLAYLIST_ID) {
             requireContext().unregisterReceiver(favouriteReceiver)
         }
-        requireContext().unregisterReceiver(musicReceiver)
     }
 
     private fun setupToolbar() {
@@ -136,10 +112,6 @@ class PlaylistDetailsFragment : Fragment() {
             songList,
             onClick = { song ->
                 SongAdapter.playSong(requireContext(), song)
-            },
-            onLongClick = { song ->
-                MusicQueueManager.add(song)
-                Snackbar.make(binding.root, "Đã thêm vào hàng đợi", Snackbar.LENGTH_SHORT).show()
             }
         )
         binding.songsRecyclerView.adapter = songAdapter

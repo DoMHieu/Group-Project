@@ -35,7 +35,7 @@ import android.widget.RelativeLayout
 import android.view.VelocityTracker
 import com.example.musicplayer.home.Song
 import com.example.musicplayer.playlist.FavoriteList
-
+@SuppressLint("SetTextI18n")
 class PlayerFragment : Fragment() {
     private lateinit var favourite: AppCompatImageButton
     private var currentSong: Song? = null
@@ -284,6 +284,15 @@ class PlayerFragment : Fragment() {
         sleepTimerButton.setOnClickListener {
             showSleepTimerDialog()
         }
+        val songOption = view.findViewById<AppCompatImageButton>(R.id.songoption)
+        songOption.setOnClickListener {
+            if (currentSong != null) {
+                SongOptionsFragment.newInstance(currentSong!!)
+                    .show(parentFragmentManager, "SongOptions")
+            } else {
+                Snackbar.make(requireView(), "No song is currently playing", Snackbar.LENGTH_SHORT).show()
+            }
+        }
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -387,14 +396,12 @@ class PlayerFragment : Fragment() {
             start()
         }
     }
-
-    @SuppressLint("SetTextI18n")
     private fun updateUpNextText() {
         val nextSong = MusicQueueManager.getNextSong()
         if (nextSong != null) {
             upNextText.text = getString(R.string.up_next_format, nextSong.title)
         } else {
-            upNextText.text = "Empty Queue"
+            upNextText.text = "Open Queue"
         }
     }
     private fun onFavouriteClicked() {
@@ -402,7 +409,7 @@ class PlayerFragment : Fragment() {
             val isNowFavourite = FavoriteList.toggleFavourite(song, requireContext())
             updateFavouriteButtonIcon(isNowFavourite)
         } ?: run {
-            Snackbar.make(requireView(), "Không có bài hát nào để yêu thích", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(requireView(), "No favourite song", Snackbar.LENGTH_SHORT).show()
         }
     }
     private fun updateFavouriteButtonIcon(isFavourite: Boolean) {
@@ -421,7 +428,7 @@ class PlayerFragment : Fragment() {
         val durationsMs = longArrayOf(5*60*1000L ,15 * 60 * 1000L, 30 * 60 * 1000L, 60 * 60 * 1000L, -1L, 0L)
         com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
             .setTitle("Set Timer")
-            .setItems(options) { dialog, which ->
+            .setItems(options) { _, which ->
                 val selectedDurationMs = durationsMs[which]
                 val timerIntent = Intent(context, MusicService::class.java).apply {
                     action = MusicService.ACTION_SET_SLEEP_TIMER
@@ -436,7 +443,7 @@ class PlayerFragment : Fragment() {
                     Snackbar.make(requireView(), "Automatic end after queue", Snackbar.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Hủy", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 }

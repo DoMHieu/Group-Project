@@ -36,8 +36,7 @@
             android:textAppearance="?attr/textAppearanceTitleSmall"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/playlist_cover"
-            tools:text="Tên Playlist rất dài" />
+            app:layout_constraintTop_toBottomOf="@id/playlist_cover" />
 
         <TextView
             android:id="@+id/playlist_song_count"
@@ -50,8 +49,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@id/playlist_title"
             app:layout_constraintStart_toStartOf="@id/playlist_title"
-            app:layout_constraintTop_toBottomOf="@id/playlist_title"
-            tools:text="15 bài hát" />
+            app:layout_constraintTop_toBottomOf="@id/playlist_title" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

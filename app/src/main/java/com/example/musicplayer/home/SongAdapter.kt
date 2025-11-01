@@ -25,7 +25,7 @@ import com.example.musicplayer.playback.SongOptionsFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.findFragment
 import android.util.Log
-
+@SuppressLint("SetTextI18n")
 class SongAdapter(
     private val items: MutableList<Song>,
     private val onClick: (Song) -> Unit,
@@ -102,9 +102,12 @@ class SongAdapter(
                     .error(R.drawable.image_24px)
             )
             .into(holder.cover)
+
         holder.itemView.setBackgroundColor(Color.TRANSPARENT)
         holder.playingIcon.visibility = View.GONE
+
         if (isQueueAdapter) {
+            holder.dragHandle.visibility = View.VISIBLE
             if (song.id == currentSongId) {
                 holder.scrimOverlay.visibility = View.VISIBLE
                 holder.playPauseOverlay.visibility = View.VISIBLE
@@ -124,7 +127,6 @@ class SongAdapter(
         holder.itemView.setOnLongClickListener { view ->
             try {
                 val fragmentManager = view.findFragment<Fragment>().parentFragmentManager
-
                 SongOptionsFragment.newInstance(song)
                     .show(fragmentManager, "SongOptions")
             } catch (e: Exception) {

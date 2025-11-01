@@ -14,7 +14,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import android.text.Editable
 import android.text.TextWatcher
-import com.example.musicplayer.playback.MusicQueueManager
 import com.example.musicplayer.R
 import com.example.musicplayer.api.RetrofitClient
 import com.example.musicplayer.api.SoundCloudResponseItem
@@ -23,7 +22,7 @@ import android.view.inputmethod.InputMethodManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-
+@SuppressLint("SetTextI18n")
 class SearchFragment : Fragment() {
     private lateinit var searchInput: EditText
     private lateinit var recyclerView: RecyclerView

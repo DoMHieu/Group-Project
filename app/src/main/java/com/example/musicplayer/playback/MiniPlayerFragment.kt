@@ -18,9 +18,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
-// (Đảm bảo bạn đã import MusicQueueManager)
-import com.example.musicplayer.playback.MusicQueueManager
-
+@SuppressLint("SetTextI18n")
 class MiniPlayerFragment : Fragment() {
 
     private lateinit var cover: ImageView
@@ -28,33 +26,24 @@ class MiniPlayerFragment : Fragment() {
     private lateinit var artist: TextView
     private lateinit var playPause: ImageButton
 
-    // === XÓA BIẾN CACHE 'currentSongTitle' VÀ 'currentCoverUrl' ===
-
     private val musicReceiver = object : BroadcastReceiver() {
         @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
-
-            // === SỬA LỖI: DÙNG LOGIC PULL (KÉO) TỪ MANAGER ===
-            // (Giống hệt PlayerFragment)
             val currentSong = MusicQueueManager.getCurrent()
 
             if (currentSong != null) {
                 title.text = currentSong.title
                 artist.text = currentSong.artist
                 Glide.with(this@MiniPlayerFragment)
-                    .load(currentSong.cover) // Dùng cover nhỏ
+                    .load(currentSong.cover)
                     .placeholder(R.drawable.ic_default_cover)
                     .error(R.drawable.ic_default_cover)
                     .into(cover)
             } else {
-                // Xử lý khi queue trống
                 title.text = "Unknown"
                 artist.text = "Unknown"
                 Glide.with(this@MiniPlayerFragment).clear(cover)
             }
-
-            // (Code cũ, vẫn đúng)
-            // Chúng ta vẫn tin 'isPlaying' từ intent, vì nó là trạng thái động
             val isPlaying = intent?.getBooleanExtra("isPlaying", false) ?: false
             playPause.setImageResource(
                 if (isPlaying) R.drawable.pause_24px else R.drawable.play
@@ -71,7 +60,6 @@ class MiniPlayerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         cover = view.findViewById(R.id.mini_player_cover)
         title = view.findViewById(R.id.mini_player_title)
         artist = view.findViewById(R.id.mini_player_artist)
@@ -83,7 +71,6 @@ class MiniPlayerFragment : Fragment() {
             }
             requireContext().startService(intent)
         }
-
         view.setOnClickListener {
             val playerFragment = parentFragmentManager.findFragmentByTag("player") ?: return@setOnClickListener
             parentFragmentManager.beginTransaction()
@@ -91,13 +78,10 @@ class MiniPlayerFragment : Fragment() {
                 .commit()
         }
     }
-
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
         val filter = IntentFilter("MUSIC_PROGRESS_UPDATE")
-
-        // Đồng nhất với PlayerFragment: trên Android 13+ dùng RECEIVER_EXPORTED, phiên bản cũ dùng ContextCompat.registerReceiver
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requireContext().registerReceiver(
                 musicReceiver,
@@ -109,9 +93,9 @@ class MiniPlayerFragment : Fragment() {
                 requireContext(),
                 musicReceiver,
                 filter,
-                null, // permission
-                null, // handler
-                ContextCompat.RECEIVER_NOT_EXPORTED // flags
+                null,
+                null,
+                ContextCompat.RECEIVER_NOT_EXPORTED
             )
         }
 

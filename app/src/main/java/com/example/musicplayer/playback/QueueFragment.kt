@@ -19,15 +19,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.musicplayer.MusicService
 import com.example.musicplayer.R
 import com.example.musicplayer.home.SongAdapter
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-
+@SuppressLint("SetTextI18n")
 class QueueFragment : BottomSheetDialogFragment() {
     private lateinit var tvQueueSongCount: TextView
     private lateinit var btnQueueShuffle: ImageButton
     private lateinit var rvQueue: RecyclerView
     private lateinit var queueAdapter: SongAdapter
     private val musicReceiver = object : BroadcastReceiver() {
-        @SuppressLint("NotifyDataSetChanged", "SetTextI18n")
+        @SuppressLint("NotifyDataSetChanged")
         override fun onReceive(context: Context?, intent: Intent?) {
             if (!::queueAdapter.isInitialized) return
             val currentQueue = MusicQueueManager.getQueue()
@@ -135,6 +137,19 @@ class QueueFragment : BottomSheetDialogFragment() {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
+        val dialog = dialog as? BottomSheetDialog
+        if(dialog!=null) {
+            val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            if(bottomSheet!=null) {
+                val layoutParams = bottomSheet.layoutParams
+                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                bottomSheet.layoutParams = layoutParams
+                val behavior = BottomSheetBehavior.from(bottomSheet)
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                behavior.isHideable = true
+                behavior.skipCollapsed = true
+            }
+        }
         val filter = IntentFilter("MUSIC_PROGRESS_UPDATE")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requireContext().registerReceiver(musicReceiver, filter, Context.RECEIVER_EXPORTED)

@@ -42,8 +42,7 @@
         android:textAppearance="?attr/textAppearanceTitleSmall"
         app:layout_constraintStart_toEndOf="@id/mini_player_cover"
         app:layout_constraintEnd_toStartOf="@id/mini_player_play_pause"
-        app:layout_constraintTop_toTopOf="@id/mini_player_cover"
-        tools:text="Tên bài hát" />
+        app:layout_constraintTop_toTopOf="@id/mini_player_cover" />
 
     <TextView
         android:id="@+id/mini_player_artist"
@@ -55,7 +54,6 @@
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintStart_toStartOf="@id/mini_player_title"
         app:layout_constraintEnd_toEndOf="@id/mini_player_title"
-        app:layout_constraintBottom_toBottomOf="@id/mini_player_cover"
-        tools:text="Tên nghệ sĩ" />
+        app:layout_constraintBottom_toBottomOf="@id/mini_player_cover" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

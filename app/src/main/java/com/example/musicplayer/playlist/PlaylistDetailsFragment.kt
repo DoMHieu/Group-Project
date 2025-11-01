@@ -18,8 +18,8 @@ import com.example.musicplayer.databinding.FragmentPlaylistDetailsBinding
 import com.example.musicplayer.home.Song
 import com.example.musicplayer.home.SongAdapter
 import com.example.musicplayer.playback.MusicQueueManager
+@SuppressLint("SetTextI18n")
 class PlaylistDetailsFragment : Fragment() {
-
     private var _binding: FragmentPlaylistDetailsBinding? = null
     private val binding get() = _binding!!
 

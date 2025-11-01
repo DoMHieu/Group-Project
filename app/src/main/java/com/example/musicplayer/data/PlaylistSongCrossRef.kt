@@ -1,29 +1,30 @@
 package com.example.musicplayer.data
 
+import android.annotation.SuppressLint
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-
+@SuppressLint("SetTextI18n")
 @Entity(
     tableName = "playlist_song_join",
-    primaryKeys = ["playlistId", "id"], // Khóa chính kết hợp
+    primaryKeys = ["playlistId", "id"],
     indices = [Index(value = ["id"])],
     foreignKeys = [
         ForeignKey(
             entity = UserPlaylist::class,
             parentColumns = ["playlistId"],
             childColumns = ["playlistId"],
-            onDelete = ForeignKey.CASCADE // Tự xóa liên kết khi xóa playlist
+            onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
-            entity = FavouriteSong::class, // Bảng chứa các bài hát
+            entity = FavouriteSong::class,
             parentColumns = ["id"],
             childColumns = ["id"],
-            onDelete = ForeignKey.CASCADE // Tự xóa liên kết khi xóa bài hát
+            onDelete = ForeignKey.CASCADE
         )
     ]
 )
 data class PlaylistSongCrossRef(
     val playlistId: Long,
-    val id: Long // (id của bài hát, tên là 'id' để khớp với FavouriteSong)
+    val id: Long
 )

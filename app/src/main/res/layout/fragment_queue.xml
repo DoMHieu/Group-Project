@@ -41,8 +41,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="10 bài hát" />
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <ImageButton
             android:id="@+id/btnQueueShuffle"

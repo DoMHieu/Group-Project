@@ -18,7 +18,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import android.annotation.SuppressLint
 import androidx.core.content.ContextCompat
-
+@SuppressLint("SetTextI18n")
 class SongOptionsFragment : BottomSheetDialogFragment() {
 
     private var _binding: FragmentSongOptionsBinding? = null
@@ -26,7 +26,6 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
     private lateinit var song: Song
     private var isFavourite: Boolean = false
     private var isInQueue: Boolean = false
-
     private val favouriteReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val changedSongId = intent?.getLongExtra("songId", -1L)
@@ -35,7 +34,6 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
             }
         }
     }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -43,7 +41,6 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
         _binding = FragmentSongOptionsBinding.inflate(inflater, container, false)
         return binding.root
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         song = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -56,7 +53,6 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
         bindData()
         setupClickListeners()
     }
-
     private fun bindData() {
         binding.optionSongTitle.text = song.title
         binding.optionSongArtist.text = song.artist
@@ -67,7 +63,6 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
         updateFavouriteState(FavoriteList.isFavourite(song.id))
         updateQueueState(MusicQueueManager.getQueue().any { it.id == song.id })
     }
-
     private fun setupClickListeners() {
         binding.optionBtnFavourite.setOnClickListener {
             FavoriteList.toggleFavourite(song, requireContext())
@@ -86,25 +81,28 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
             showSnackbar("Under developing")
         }
     }
-
     private fun updateFavouriteState(isFav: Boolean) {
         this.isFavourite = isFav
         binding.optionBtnFavourite.setImageResource(
             if (isFav) R.drawable.favorite_checked else R.drawable.favorite_24px
         )
     }
-
     private fun updateQueueState(inQueue: Boolean) {
         this.isInQueue = inQueue
+        val isCurrentSong = (song.id == MusicQueueManager.getCurrent()?.id)
         if (inQueue) {
-            binding.optionBtnEnqueue.text = "Dismiss queue"
-            binding.optionBtnEnqueue.setCompoundDrawablesWithIntrinsicBounds(R.drawable.playlist_remove_24px, 0, 0, 0)
+            if(isCurrentSong) {
+                binding.optionBtnEnqueue.visibility = View.GONE
+            } else {
+                binding.optionBtnEnqueue.visibility = View.VISIBLE
+                binding.optionBtnEnqueue.text = "Dismiss queue"
+                binding.optionBtnEnqueue.setCompoundDrawablesWithIntrinsicBounds(R.drawable.playlist_remove_24px, 0, 0, 0)
+            }
         } else {
             binding.optionBtnEnqueue.text = "Enqueue"
-            binding.optionBtnEnqueue.setCompoundDrawablesWithIntrinsicBounds(R.drawable.playlist_add_24px, 0, 0, 0)
+            binding.optionBtnEnqueue.setCompoundDrawablesWithIntrinsicBounds(R.drawable.queue_music_24px, 0, 0, 0)
         }
     }
-
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
@@ -123,7 +121,6 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
             )
         }
     }
-
     override fun onStop() {
         super.onStop()
         try {
@@ -132,9 +129,10 @@ class SongOptionsFragment : BottomSheetDialogFragment() {
             e.printStackTrace()
         }
     }
-
     private fun showSnackbar(message: String) {
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+        if (_binding != null) {
+            Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     override fun onDestroyView() {

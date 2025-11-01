@@ -36,5 +36,6 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:contentDescription="Create new playlist"
-        app:srcCompat="@drawable/add_2_24px" />
+        app:srcCompat="@drawable/add_2_24px"
+        android:visibility="gone"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

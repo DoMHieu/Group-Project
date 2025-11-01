@@ -44,8 +44,7 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:maxLines="1"
-                android:ellipsize="end"
-                tools:text="Tên bài hát rất dài" />
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/option_song_artist"
@@ -84,7 +83,7 @@
             android:gravity="center_vertical"
             android:textAppearance="?attr/textAppearanceBodyLarge"
             android:background="?attr/selectableItemBackground"
-            app:drawableStartCompat="@drawable/playlist_play"
+            app:drawableStartCompat="@drawable/queue_music_24px"
             tools:text="Enqueue" />
 
         <TextView

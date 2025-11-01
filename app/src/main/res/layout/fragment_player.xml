@@ -48,8 +48,7 @@
                 android:ellipsize="marquee"
                 android:gravity="center"
                 android:singleLine="true"
-                android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                tools:text="Tên bài hát" />
+                android:textAppearance="?attr/textAppearanceHeadlineSmall" />
 
             <TextView
                 android:id="@+id/artistTextView"
@@ -60,7 +59,7 @@
                 android:singleLine="true"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="Tên nghệ sĩ" />
+                tools:text="Artist" />
         </LinearLayout>
 
         <SeekBar
@@ -209,7 +208,7 @@
             app:tint="?attr/colorOnSurfaceVariant" />
 
         <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/more"
+            android:id="@+id/songoption"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackgroundBorderless"

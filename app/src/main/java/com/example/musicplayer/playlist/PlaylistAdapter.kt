@@ -20,7 +20,7 @@ class PlaylistAdapter(
         @SuppressLint("SetTextI18n")
         fun bind(playlist: Playlist) {
             binding.playlistTitle.text = playlist.name
-            binding.playlistSongCount.text = "${playlist.songCount} bài hát"
+            binding.playlistSongCount.text = "${playlist.songCount} songs"
 
             if (playlist.id == Playlist.FAVOURITES_PLAYLIST_ID) {
                 Glide.with(binding.root.context).clear(binding.playlistCover)
